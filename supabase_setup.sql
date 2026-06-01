@@ -121,6 +121,73 @@ $$;
 
 
 -- ============================================================
+-- 8. anon 권한 부여 (브라우저에서 직접 호출용)
+--    Supabase Dashboard → Settings → API → anon public key 사용
+-- ============================================================
+GRANT EXECUTE ON FUNCTION process_admin_login(text, text)  TO anon;
+GRANT EXECUTE ON FUNCTION process_student_login(text, text) TO anon;
+
+-- user_textnotice: 게시된 공지만 anon 조회 허용
+ALTER TABLE user_textnotice ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "anon_read_published" ON user_textnotice;
+CREATE POLICY "anon_read_published" ON user_textnotice
+  FOR SELECT TO anon USING (textnotice_hidden = false);
+
+
+-- ============================================================
+-- 9. 관리자 대시보드 데이터 RPC
+--    admin_id 확인 후 대시보드 데이터 반환 (SECURITY DEFINER = RLS 우회)
+-- ============================================================
+CREATE OR REPLACE FUNCTION get_admin_dashboard_data(p_admin_id text)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_admin      admin_master%ROWTYPE;
+  v_today      timestamptz;
+  v_today_cnt  int;
+  v_notices    jsonb;
+  v_adm_logs   jsonb;
+  v_result     jsonb;
+BEGIN
+  SELECT * INTO v_admin FROM admin_master
+  WHERE admin_id = p_admin_id AND admin_status = 'active';
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('error', 'UNAUTHORIZED');
+  END IF;
+
+  v_today := date_trunc('day', now() AT TIME ZONE 'Asia/Seoul') AT TIME ZONE 'Asia/Seoul';
+
+  SELECT count(*)::int INTO v_today_cnt FROM user_textnotice
+  WHERE textnotice_date >= v_today;
+
+  SELECT COALESCE(jsonb_agg(n), '[]'::jsonb) INTO v_notices FROM (
+    SELECT textnotice_id, textnotice_title, textnotice_date, textnotice_readcnt, textnotice_hidden
+    FROM user_textnotice ORDER BY textnotice_date DESC LIMIT 5
+  ) n;
+
+  v_result := jsonb_build_object(
+    'today_count', v_today_cnt,
+    'notices',     v_notices
+  );
+
+  IF v_admin.admin_is_super_admin THEN
+    SELECT COALESCE(jsonb_agg(a), '[]'::jsonb) INTO v_adm_logs FROM (
+      SELECT admin_name, admin_email, admin_last_login_at, admin_is_super_admin
+      FROM admin_master ORDER BY admin_last_login_at DESC NULLS LAST LIMIT 5
+    ) a;
+    v_result := v_result || jsonb_build_object('admin_logins', v_adm_logs);
+  END IF;
+
+  RETURN v_result;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION get_admin_dashboard_data(text) TO anon;
+
+
+-- ============================================================
 -- 6. 관리자 로그인 처리 RPC
 -- ============================================================
 CREATE OR REPLACE FUNCTION process_admin_login(p_admin_id text, p_password text)
