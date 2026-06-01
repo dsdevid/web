@@ -514,6 +514,28 @@ function clearSession() {
 }
 
 // ─────────────────────────────────────────────
+// 5분 무활동 자동 로그아웃
+// ─────────────────────────────────────────────
+const IDLE_TIMEOUT = 5 * 60 * 1000; // 5분
+var _idleTimer = null;
+
+function resetIdleTimer() {
+  clearTimeout(_idleTimer);
+  _idleTimer = setTimeout(function() {
+    clearSession();
+    alert('5분 동안 활동이 없어 자동 로그아웃되었습니다.');
+    showLoginView();
+  }, IDLE_TIMEOUT);
+}
+
+function startIdleTimer() {
+  ['mousemove','keydown','mousedown','touchstart','scroll'].forEach(function(ev) {
+    document.addEventListener(ev, resetIdleTimer, { passive: true });
+  });
+  resetIdleTimer();
+}
+
+// ─────────────────────────────────────────────
 // 페이지 로드: 세션 있으면 대시보드 즉시 로드
 // ─────────────────────────────────────────────
 window.addEventListener('load', async function() {
@@ -524,8 +546,11 @@ window.addEventListener('load', async function() {
   const data = await callRpc('get_admin_dashboard_data', { p_admin_id: adminId });
   showLoginLoading(false);
 
-  if (!data || data.error) { clearSession(); return; }
+  // 네트워크 오류(null)는 세션 유지, 명시적 인증 실패만 로그아웃
+  if (data && data.error === 'UNAUTHORIZED') { clearSession(); return; }
+  if (!data) return; // 네트워크 오류 — 로그인 폼으로 (세션 유지)
   renderDashboard(data);
+  startIdleTimer();
 });
 
 // ─────────────────────────────────────────────
@@ -559,6 +584,7 @@ async function doLogin() {
 
   if (!data || data.error) { showLoginError('대시보드 로드 실패'); return; }
   renderDashboard(data);
+  startIdleTimer();
 }
 
 // Enter 키
