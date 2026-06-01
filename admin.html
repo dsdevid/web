@@ -483,10 +483,10 @@
         <table class="data-table">
           <thead>
             <tr>
-              <th style="width:36px">고정</th>
               <th>제목</th>
               <th style="width:90px">등록일</th>
               <th style="width:52px">조회</th>
+              <th style="width:52px">고정</th>
               <th style="width:52px">게시</th>
               <th style="width:68px">관리</th>
             </tr>
@@ -563,7 +563,8 @@ async function callRpc(func, params) {
       },
       body: JSON.stringify(params)
     });
-    return res.ok ? await res.json() : null;
+    if (!res.ok) { var err = await res.text(); console.error('[RPC]', func, res.status, err); return null; }
+    return await res.json();
   } catch(e) { return null; }
 }
 
@@ -589,19 +590,15 @@ function renderAdminNoticeTable(list) {
   }
   tbody.innerHTML = list.slice(0,10).map(function(r) {
     var date = r.textnotice_date ? r.textnotice_date.substring(0,10) : '—';
-    var pinBtn  = r.textnotice_pin
-      ? '<button class="btn-icon" title="고정 해제" onclick="toggleNoticePin(' + r.textnotice_id + ',true)">📌</button>'
-      : '<button class="btn-icon" title="고정"      onclick="toggleNoticePin(' + r.textnotice_id + ',false)">📍</button>';
-    var pubBtn  = r.textnotice_hidden
-      ? '<button class="btn-icon" title="게시"  onclick="toggleNoticeHidden(' + r.textnotice_id + ',true)">🔒</button>'
-      : '<button class="btn-icon" title="비공개" onclick="toggleNoticeHidden(' + r.textnotice_id + ',false)">✅</button>';
+    var pinTxt = r.textnotice_pin    ? '📌' : '—';
+    var pubTxt = r.textnotice_hidden ? '🔒' : '✅';
     return '<tr>'
-      + '<td style="text-align:center">' + pinBtn + '</td>'
       + '<td style="cursor:pointer" onclick="openNoticeEdit(' + r.textnotice_id + ')">'
         + esc(r.textnotice_title || '') + '</td>'
       + '<td class="td-muted">' + date + '</td>'
       + '<td>' + (r.textnotice_readcnt || 0) + '</td>'
-      + '<td style="text-align:center">' + pubBtn + '</td>'
+      + '<td style="text-align:center">' + pinTxt + '</td>'
+      + '<td style="text-align:center">' + pubTxt + '</td>'
       + '<td><button class="btn-icon" onclick="deleteNotice(' + r.textnotice_id + ')">🗑️</button></td>'
       + '</tr>';
   }).join('');
@@ -614,9 +611,10 @@ function openNoticeEdit(id) {
   document.getElementById('editId').value    = r ? r.textnotice_id : 0;
   document.getElementById('editTitle').value = r ? (r.textnotice_title  || '') : '';
   document.getElementById('editBody').value  = r ? (r.textnotice_body   || '') : '';
-  document.getElementById('editOwner').value = r ? (r.textnotice_owner  || '') : '';
+  document.getElementById('editOwner').value = r ? (r.textnotice_owner  || '') : getAdminId();
   document.getElementById('editPin').checked    = r ? !!r.textnotice_pin    : false;
   document.getElementById('editHidden').checked = r ? !!r.textnotice_hidden : false;
+
   document.getElementById('editError').className = 'edit-error';
   document.getElementById('editSpinner').className = 'spinner-wrap';
   document.getElementById('noticeEditModal').style.display = 'flex';

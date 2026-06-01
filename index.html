@@ -404,6 +404,7 @@
             text-decoration: none;
             gap: 10px;
             transition: background 0.1s;
+            cursor: pointer;
         }
 
         .n-row:last-child { border-bottom: none; }
@@ -1437,13 +1438,23 @@ function handleNoticeClick(e) {
 }
 
 function openNoticeDetail(id, title, body, date, owner) {
-    document.getElementById('ndTitle').textContent = title || '';
-    document.getElementById('ndMeta').textContent =
-        (date ? date.substring(0,10) : '') + (owner ? '  |  ' + owner : '');
-    document.getElementById('ndBody').textContent = body || '';
-    document.getElementById('noticeDetailModal').style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-    // 관리자가 아닌 경우만 조회수 증가
+    var dateStr = date ? date.substring(0, 10) : '';
+    var html =
+        '<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8">' +
+        '<title>' + esc(title) + '</title>' +
+        '<style>' +
+        'body{font-family:"Malgun Gothic",sans-serif;margin:0;padding:32px 36px;background:#fff;color:#1a1a1a;}' +
+        'h2{font-size:17px;font-weight:600;line-height:1.5;margin:0 0 10px;}' +
+        '.meta{font-size:12px;color:#888;border-bottom:1px solid #eee;padding-bottom:12px;margin-bottom:20px;}' +
+        '.body{font-size:14px;line-height:1.85;white-space:pre-wrap;}' +
+        '<\/style><\/head><body>' +
+        '<h2>' + esc(title || '') + '<\/h2>' +
+        '<div class="meta">' + esc(dateStr) + ' &nbsp;|&nbsp; 관리자<\/div>' +
+        '<div class="body">' + esc(body || '') + '<\/div>' +
+        '<\/body><\/html>';
+    var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
     if (!localStorage.getItem('adm_id')) {
         callRpc('increment_notice_readcnt', { p_id: id });
     }
