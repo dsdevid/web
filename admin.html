@@ -499,19 +499,42 @@
 </div>
 
 <script>
+// ══════════════════════════════════════════════
+// Supabase 설정 (index.html과 동일한 anon key 사용)
+// ══════════════════════════════════════════════
+const SUPABASE_URL  = 'https://rwplqifhmlduukipnksm.supabase.co';
+const SUPABASE_ANON = '여기에_anon_public_키_입력';
+
+async function callRpc(func, params) {
+  try {
+    const res = await fetch(SUPABASE_URL + '/rest/v1/rpc/' + func, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_ANON,
+        'Authorization': 'Bearer ' + SUPABASE_ANON,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(params)
+    });
+    return res.ok ? await res.json() : null;
+  } catch(e) { return null; }
+}
+
 // ─────────────────────────────────────────────
-// 세션 관리 (sessionStorage)
+// 세션 관리 (sessionStorage — index.html과 공유)
 // ─────────────────────────────────────────────
-const SESSION_KEY = 'adm_token';
+const SESSION_KEY = 'adm_id';
 const SESSION_NAME = 'adm_name';
 const SESSION_SUPER = 'adm_super';
 
-function getStoredToken() { return sessionStorage.getItem(SESSION_KEY); }
+function getAdminId()    { return sessionStorage.getItem(SESSION_KEY); }
+function getAdminName()  { return sessionStorage.getItem(SESSION_NAME); }
+function isSuperAdmin()  { return sessionStorage.getItem(SESSION_SUPER) === '1'; }
 
-function saveSession(token, name, isSuperAdmin) {
-  sessionStorage.setItem(SESSION_KEY, token);
-  sessionStorage.setItem(SESSION_NAME, name);
-  sessionStorage.setItem(SESSION_SUPER, isSuperAdmin ? '1' : '0');
+function saveSession(adminId, name, isSuper) {
+  sessionStorage.setItem(SESSION_KEY,   adminId);
+  sessionStorage.setItem(SESSION_NAME,  name);
+  sessionStorage.setItem(SESSION_SUPER, isSuper ? '1' : '0');
 }
 
 function clearSession() {
@@ -521,77 +544,57 @@ function clearSession() {
 }
 
 // ─────────────────────────────────────────────
-// 페이지 로드: 기존 세션 있으면 대시보드 바로 로드
+// 페이지 로드: 세션 있으면 대시보드 즉시 로드
 // ─────────────────────────────────────────────
-window.addEventListener('load', function() {
-  const token = getStoredToken();
-  if (token) {
-    showLoginLoading(true);
-    google.script.run
-      .withSuccessHandler(function(data) {
-        showLoginLoading(false);
-        initDashboard(data, token);
-      })
-      .withFailureHandler(function() {
-        showLoginLoading(false);
-        clearSession();
-        // 세션 만료 — 로그인 폼 유지
-      })
-      .getAdminDashboardData(token);
-  }
+window.addEventListener('load', async function() {
+  const adminId = getAdminId();
+  if (!adminId) return; // 로그인 폼 유지
+
+  showLoginLoading(true);
+  const data = await callRpc('get_admin_dashboard_data', { p_admin_id: adminId });
+  showLoginLoading(false);
+
+  if (!data || data.error) { clearSession(); return; }
+  renderDashboard(data);
 });
 
 // ─────────────────────────────────────────────
 // 로그인
 // ─────────────────────────────────────────────
-function doLogin() {
-  const adminId = document.getElementById('inputId').value.trim();
+async function doLogin() {
+  const adminId  = document.getElementById('inputId').value.trim();
   const password = document.getElementById('inputPw').value;
-
-  if (!adminId || !password) {
-    showLoginError('아이디와 비밀번호를 입력하세요');
-    return;
-  }
+  if (!adminId || !password) { showLoginError('아이디와 비밀번호를 입력하세요'); return; }
 
   showLoginLoading(true);
   hideLoginError();
 
-  google.script.run
-    .withSuccessHandler(function(result) {
-      showLoginLoading(false);
+  // 1. 비밀번호 검증
+  const login = await callRpc('process_admin_login', { p_admin_id: adminId, p_password: password });
+  if (!login || !login.success) {
+    showLoginLoading(false);
+    const msgs = { NOT_FOUND:'계정을 찾을 수 없습니다', WRONG_PASSWORD:'비밀번호가 올바르지 않습니다',
+                   LOCKED:'계정이 잠겼습니다', NO_PASSWORD:'비밀번호가 설정되지 않았습니다' };
+    showLoginError(msgs[login && login.error] || '로그인 실패');
+    document.getElementById('inputPw').value = '';
+    return;
+  }
 
-      if (!result || !result.success) {
-        showLoginError(result ? result.message : '서버 오류가 발생했습니다');
-        document.getElementById('inputPw').value = '';
-        return;
-      }
+  saveSession(login.admin_id, login.admin_name, login.admin_is_super_admin);
 
-      saveSession(result.token, result.name, result.isSuperAdmin);
+  // 2. 대시보드 데이터 로드
+  const data = await callRpc('get_admin_dashboard_data', { p_admin_id: login.admin_id });
+  showLoginLoading(false);
 
-      // 대시보드 데이터 로드
-      showLoginLoading(true);
-      google.script.run
-        .withSuccessHandler(function(data) {
-          showLoginLoading(false);
-          initDashboard(data, result.token);
-        })
-        .withFailureHandler(function(e) {
-          showLoginLoading(false);
-          showLoginError('대시보드 로드 실패: ' + (e && e.message || '알 수 없는 오류'));
-        })
-        .getAdminDashboardData(result.token);
-    })
-    .withFailureHandler(function(e) {
-      showLoginLoading(false);
-      showLoginError('서버 오류: ' + (e && e.message || '알 수 없는 오류'));
-    })
-    .adminLogin(adminId, password);
+  if (!data || data.error) { showLoginError('대시보드 로드 실패'); return; }
+  renderDashboard(data);
 }
 
-// Enter 키 로그인
+// Enter 키
 document.addEventListener('keydown', function(e) {
-  if (e.key === 'Enter' && document.getElementById('loginPage').style.display !== 'none') {
-    doLogin();
+  if (e.key === 'Enter' && (document.activeElement && document.activeElement.tagName) === 'INPUT'
+      && document.getElementById('loginPage').style.display !== 'none') {
+    e.preventDefault(); doLogin();
   }
 });
 
@@ -600,51 +603,36 @@ document.addEventListener('keydown', function(e) {
 // ─────────────────────────────────────────────
 function doLogout() {
   if (!confirm('로그아웃 하시겠습니까?')) return;
-  const token = getStoredToken();
   clearSession();
-  google.script.run.adminLogout(token);
   showLoginView();
 }
 
 // ─────────────────────────────────────────────
-// 대시보드 초기화
+// 대시보드 렌더링
 // ─────────────────────────────────────────────
-function initDashboard(data, token) {
-  if (!data || !data.admin) {
-    clearSession();
-    showLoginError('세션이 만료되었습니다. 다시 로그인하세요');
-    return;
-  }
+function renderDashboard(data) {
+  const adminName  = getAdminName();
+  const superAdmin = isSuperAdmin();
 
-  const admin = data.admin;
+  document.getElementById('navName').textContent = adminName;
+  if (superAdmin) document.getElementById('navSuper').style.display = 'inline';
 
-  // Nav
-  document.getElementById('navName').textContent = admin.name;
-  if (admin.isSuperAdmin) document.getElementById('navSuper').style.display = 'inline';
-
-  // 날짜
   const d = new Date();
   document.getElementById('pageDate').textContent =
-    d.getFullYear() + '.' +
-    String(d.getMonth()+1).padStart(2,'0') + '.' +
-    String(d.getDate()).padStart(2,'0') + ' 기준';
+    d.getFullYear() + '.' + String(d.getMonth()+1).padStart(2,'0') + '.' + String(d.getDate()).padStart(2,'0') + ' 기준';
 
-  // 통계
-  document.getElementById('statToday').textContent = data.todayCount ?? 0;
-  document.getElementById('statRecent').textContent = data.recentNotices.length;
+  document.getElementById('statToday').textContent  = data.today_count  ?? 0;
+  document.getElementById('statRecent').textContent = (data.notices || []).length;
 
-  // 공지 테이블
-  renderNotices(data.recentNotices);
+  renderNotices(data.notices || []);
 
-  // 슈퍼관리자
-  if (admin.isSuperAdmin && data.adminLogins) {
+  if (superAdmin && data.admin_logins) {
     document.getElementById('superSection').style.display = 'block';
-    renderAdminLogins(data.adminLogins);
+    renderAdminLogins(data.admin_logins);
   }
 
-  // 화면 전환
   document.getElementById('loginPage').style.display = 'none';
-  document.getElementById('adminApp').style.display = 'block';
+  document.getElementById('adminApp').style.display  = 'block';
 }
 
 // ─────────────────────────────────────────────

@@ -897,7 +897,7 @@
                 </div>
                 <div id="navLoggedIn" style="display:none;align-items:center;gap:8px;">
                     <span class="nav-user-name" id="navUserName"></span>
-                    <a href="?p=a" class="nav-admin-pill" id="navAdminLink" style="display:none">관리자</a>
+                    <a href="admin.html" class="nav-admin-pill" id="navAdminLink" style="display:none">관리자</a>
                     <button class="nav-logout-btn" onclick="doLogout()">로그아웃</button>
                 </div>
             </div>
@@ -1173,7 +1173,7 @@
 
 <!-- ── 로그인 모달 ── -->
 <div id="loginModal" class="modal-backdrop" style="display:none" onclick="handleModalBackdrop(event)">
-    <div class="modal-box">
+    <div class="modal-box" onclick="event.stopPropagation()">
         <button class="modal-close" onclick="closeLoginModal()">✕</button>
 
         <div class="modal-tabs">
@@ -1221,6 +1221,28 @@
 </footer>
 
 <script>
+// ══════════════════════════════════════════════
+// Supabase 설정 (anon key — 브라우저 공개용)
+// 키 위치: Supabase Dashboard → Settings → API → anon public
+// ══════════════════════════════════════════════
+var SUPABASE_URL  = 'https://rwplqifhmlduukipnksm.supabase.co';
+var SUPABASE_ANON = '여기에_anon_public_키_입력';
+
+async function callRpc(func, params) {
+    try {
+        var res = await fetch(SUPABASE_URL + '/rest/v1/rpc/' + func, {
+            method: 'POST',
+            headers: {
+                'apikey': SUPABASE_ANON,
+                'Authorization': 'Bearer ' + SUPABASE_ANON,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(params)
+        });
+        return res.ok ? await res.json() : null;
+    } catch(e) { return null; }
+}
+
 // ─────────────────────────────────────────────
 // 로그인 모달
 // ─────────────────────────────────────────────
@@ -1262,96 +1284,66 @@ function setModalLoading(on, btnId) {
     if (on) document.getElementById('modalError').className = 'modal-error';
 }
 
-// GAS 환경 확인
-function gasAvailable() {
-    if (typeof google === 'undefined' || !google.script || !google.script.run) {
-        showModalError('GAS 웹앱 URL로 접속하세요. 로컬 파일 직접 열기는 작동하지 않습니다.');
-        return false;
-    }
-    return true;
-}
-
 // ─────────────────────────────────────────────
-// 학생 로그인 (학번 + 이름 → user_master 확인)
+// 학생 로그인
 // ─────────────────────────────────────────────
-function doStudentLogin() {
+async function doStudentLogin() {
     var sid  = document.getElementById('genId').value.trim();
     var name = document.getElementById('genName').value.trim();
     if (!sid || !name) { showModalError('학번과 이름을 입력하세요'); return; }
-    if (!gasAvailable()) return;
 
     setModalLoading(true, 'btnGenLogin');
-    google.script.run
-        .withSuccessHandler(function(r) {
-            setModalLoading(false, 'btnGenLogin');
-            if (!r || !r.success) { showModalError(r ? r.message : '서버 오류'); return; }
-            sessionStorage.setItem('std_token', r.token);
-            sessionStorage.setItem('std_name',  r.name);
-            sessionStorage.setItem('std_ban',   r.ban  || '');
-            sessionStorage.setItem('std_prt',   r.prt  || '');
-            updateNavLoggedIn(r.name + '님', false);
-            closeLoginModal();
-        })
-        .withFailureHandler(function(e) {
-            setModalLoading(false, 'btnGenLogin');
-            showModalError('서버 오류: ' + (e && e.message || '알 수 없는 오류'));
-        })
-        .studentLogin(sid, name);
+    var r = await callRpc('process_student_login', { p_student_id: sid, p_student_name: name });
+    setModalLoading(false, 'btnGenLogin');
+
+    if (!r || !r.success) {
+        showModalError(!r ? '서버 오류' : r.error === 'NOT_FOUND' ? '학번 또는 이름이 올바르지 않습니다' : '로그인 실패');
+        return;
+    }
+    sessionStorage.setItem('std_id',   r.student_id);
+    sessionStorage.setItem('std_name', r.student_name);
+    sessionStorage.setItem('std_ban',  r.student_ban || '');
+    updateNavLoggedIn(r.student_name + '님', false);
+    closeLoginModal();
 }
 
 // ─────────────────────────────────────────────
-// 관리자 로그인 → 성공 시 네비에 '관리자' 표시
+// 관리자 로그인
 // ─────────────────────────────────────────────
-function doAdminLogin() {
+async function doAdminLogin() {
     var id = document.getElementById('admId').value.trim();
     var pw = document.getElementById('admPw').value;
     if (!id || !pw) { showModalError('아이디와 비밀번호를 입력하세요'); return; }
-    if (!gasAvailable()) return;
 
     setModalLoading(true, 'btnAdmLogin');
-    google.script.run
-        .withSuccessHandler(function(r) {
-            setModalLoading(false, 'btnAdmLogin');
-            if (!r || !r.success) {
-                showModalError(r ? r.message : '서버 오류');
-                document.getElementById('admPw').value = '';
-                return;
-            }
-            sessionStorage.setItem('adm_token', r.token);
-            sessionStorage.setItem('adm_name',  r.name);
-            sessionStorage.setItem('adm_super', r.isSuperAdmin ? '1' : '0');
-            updateNavLoggedIn(r.name + '님', true);
-            closeLoginModal();
-        })
-        .withFailureHandler(function(e) {
-            setModalLoading(false, 'btnAdmLogin');
-            showModalError('서버 오류: ' + (e && e.message || '알 수 없는 오류'));
-            document.getElementById('admPw').value = '';
-        })
-        .adminLogin(id, pw);
+    var r = await callRpc('process_admin_login', { p_admin_id: id, p_password: pw });
+    setModalLoading(false, 'btnAdmLogin');
+
+    if (!r || !r.success) {
+        var msgs = { NOT_FOUND:'계정을 찾을 수 없습니다', WRONG_PASSWORD:'비밀번호가 올바르지 않습니다',
+                     LOCKED:'계정이 잠겼습니다', NO_PASSWORD:'비밀번호가 설정되지 않은 계정입니다' };
+        showModalError(msgs[r && r.error] || '로그인 실패');
+        document.getElementById('admPw').value = '';
+        return;
+    }
+    sessionStorage.setItem('adm_id',    r.admin_id);
+    sessionStorage.setItem('adm_name',  r.admin_name);
+    sessionStorage.setItem('adm_super', r.admin_is_super_admin ? '1' : '0');
+    updateNavLoggedIn(r.admin_name + '님', true);
+    closeLoginModal();
 }
 
 // ─────────────────────────────────────────────
 // 로그아웃
 // ─────────────────────────────────────────────
-function doLogout() {
-    if (typeof google !== 'undefined' && google.script && google.script.run) {
-        var stdToken = sessionStorage.getItem('std_token');
-        var admToken = sessionStorage.getItem('adm_token');
-        if (stdToken) google.script.run.studentLogout(stdToken);
-        if (admToken) google.script.run.adminLogout(admToken);
-    }
-    sessionStorage.clear();
-    updateNavGuest();
-}
+function doLogout() { sessionStorage.clear(); updateNavGuest(); }
 
 // ─────────────────────────────────────────────
 // 네비 상태
 // ─────────────────────────────────────────────
 function updateNavLoggedIn(displayName, isAdmin) {
     document.getElementById('navGuest').style.display = 'none';
-    var el = document.getElementById('navLoggedIn');
-    el.style.display = 'flex';
+    document.getElementById('navLoggedIn').style.display = 'flex';
     document.getElementById('navUserName').textContent = displayName;
     document.getElementById('navAdminLink').style.display = isAdmin ? 'inline' : 'none';
 }
@@ -1360,7 +1352,7 @@ function updateNavGuest() {
     document.getElementById('navGuest').style.display = 'block';
 }
 
-// 페이지 로드 시 세션 복원 (관리자 우선)
+// 페이지 로드 — 세션 복원 (관리자 우선)
 (function() {
     var admName = sessionStorage.getItem('adm_name');
     var stdName = sessionStorage.getItem('std_name');
@@ -1368,13 +1360,14 @@ function updateNavGuest() {
     else if (stdName) updateNavLoggedIn(stdName + '님', false);
 })();
 
-// Enter 키
+// Enter 키 — input 포커스 상태에서만
 document.addEventListener('keydown', function(e) {
     if (e.key !== 'Enter') return;
     var modal = document.getElementById('loginModal');
     if (!modal || modal.style.display === 'none') return;
-    if (_loginTab === 'general') doStudentLogin();
-    else doAdminLogin();
+    if ((document.activeElement && document.activeElement.tagName) !== 'INPUT') return;
+    e.preventDefault();
+    if (_loginTab === 'general') doStudentLogin(); else doAdminLogin();
 });
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
