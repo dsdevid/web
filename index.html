@@ -784,20 +784,61 @@
         .notice-scroll::-webkit-scrollbar-thumb { background: var(--hairline); border-radius: 2px; }
 
         /* ── 공지 상세 모달 ── */
-        .notice-modal-body {
-            overflow-y: auto;
+        .nd-modal-box {
+            background: #f5f5f7;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 8px 40px rgba(0,0,0,.18);
+            animation: modalIn .15s ease;
+        }
+        .nd-header {
+            background: #00447f;
+            padding: 14px 22px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+        .nd-header-text { color: #fff; font-size: 17px; font-weight: 600; letter-spacing: .3px; }
+        .nd-close {
+            background: rgba(255,255,255,.15); border: none; color: #fff;
+            width: 28px; height: 28px; border-radius: 50%; font-size: 14px;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+        }
+        .nd-close:hover { background: rgba(255,255,255,.3); }
+        .nd-card {
+            background: #fff;
+            margin: 14px 14px 0;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,.07);
+            overflow: hidden;
             flex: 1;
-            font-size: 14px;
-            line-height: 1.7;
-            color: var(--ink);
-            white-space: pre-wrap;
-            padding: 4px 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
         }
-        .notice-modal-meta {
-            font-size: 12px;
-            color: var(--ink-muted);
-            margin: 6px 0 16px;
+        .nd-title-wrap { padding: 16px 20px 12px; border-bottom: 1px solid #f0f0f0; flex-shrink: 0; }
+        .nd-title { font-size: 17px; font-weight: 700; line-height: 1.5; color: #111; }
+        .nd-meta {
+            display: flex; gap: 0; font-size: 12px;
+            background: #f0f4fa; padding: 8px 20px;
+            border-bottom: 1px solid #e8edf5; flex-shrink: 0;
         }
+        .nd-meta-item { display: flex; align-items: center; gap: 5px; margin-right: 20px; }
+        .nd-meta-label { color: #7a90b0; }
+        .nd-meta-value { color: #3a5070; font-weight: 600; }
+        .nd-body {
+            padding: 16px 20px;
+            font-size: 14px; line-height: 1.9;
+            color: #333; white-space: pre-wrap; word-break: break-word;
+            flex: 1; overflow-y: auto;
+        }
+        .nd-footer { text-align: center; padding: 10px; font-size: 11px; color: #bbb; flex-shrink: 0; }
 
         /* ── 로그인 모달 ── */
         @keyframes spin { to { transform: rotate(360deg); } }
@@ -1175,12 +1216,17 @@
 
 <!-- ── 공지 상세 모달 ── -->
 <div id="noticeDetailModal" class="modal-backdrop" style="display:none" onclick="closeNoticeDetail()">
-    <div class="modal-box" onclick="event.stopPropagation()"
-         style="max-width:600px;max-height:80vh;display:flex;flex-direction:column;">
-        <button class="modal-close" onclick="closeNoticeDetail()">✕</button>
-        <div id="ndTitle" class="modal-title" style="font-size:17px;line-height:1.4;padding-right:24px;"></div>
-        <div id="ndMeta"  class="notice-modal-meta"></div>
-        <div id="ndBody"  class="notice-modal-body"></div>
+    <div class="nd-modal-box" onclick="event.stopPropagation()">
+        <div class="nd-header">
+            <span class="nd-header-text">공지사항</span>
+            <button class="nd-close" onclick="closeNoticeDetail()">✕</button>
+        </div>
+        <div class="nd-card">
+            <div class="nd-title-wrap"><div id="ndTitle" class="nd-title"></div></div>
+            <div id="ndMeta" class="nd-meta"></div>
+            <div id="ndBody" class="nd-body"></div>
+        </div>
+        <div class="nd-footer">강남대성기숙(의대관)</div>
     </div>
 </div>
 
@@ -1438,27 +1484,20 @@ function handleNoticeClick(e) {
 }
 
 function openNoticeDetail(id, title, body, date, owner) {
-    var dateStr = date ? date.substring(0, 10) : '';
-    var html =
-        '<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8">' +
-        '<title>' + esc(title) + '</title>' +
-        '<style>' +
-        'body{font-family:"Malgun Gothic",sans-serif;margin:0;padding:32px 36px;background:#fff;color:#1a1a1a;}' +
-        'h2{font-size:17px;font-weight:600;line-height:1.5;margin:0 0 10px;}' +
-        '.meta{font-size:12px;color:#888;border-bottom:1px solid #eee;padding-bottom:12px;margin-bottom:20px;}' +
-        '.body{font-size:14px;line-height:1.85;white-space:pre-wrap;}' +
-        '<\/style><\/head><body>' +
-        '<h2>' + esc(title || '') + '<\/h2>' +
-        '<div class="meta">' + esc(dateStr) + ' &nbsp;|&nbsp; 관리자<\/div>' +
-        '<div class="body">' + esc(body || '') + '<\/div>' +
-        '<\/body><\/html>';
-    var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-    var url = URL.createObjectURL(blob);
-    window.open(url, '_blank');
+    var dateStr = date ? date.substring(0, 10).replace(/-/g, '.') : '';
+    document.getElementById('ndTitle').textContent = title || '';
+    var meta = document.getElementById('ndMeta');
+    meta.innerHTML =
+        '<span class="nd-meta-item"><span class="nd-meta-label">날짜<\/span><span class="nd-meta-value">' + esc(dateStr) + '<\/span><\/span>' +
+        '<span class="nd-meta-item"><span class="nd-meta-label">게시자<\/span><span class="nd-meta-value">관리자<\/span><\/span>';
+    document.getElementById('ndBody').textContent = body || '';
+    document.getElementById('noticeDetailModal').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
     if (!localStorage.getItem('adm_id')) {
         callRpc('increment_notice_readcnt', { p_id: id });
     }
 }
+
 
 function closeNoticeDetail() {
     document.getElementById('noticeDetailModal').style.display = 'none';
