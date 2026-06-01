@@ -1330,7 +1330,6 @@ async function doAdminLogin() {
     localStorage.setItem('adm_id',    r.admin_id);
     localStorage.setItem('adm_name',  r.admin_name);
     localStorage.setItem('adm_super', r.admin_is_super_admin ? '1' : '0');
-    updateNavLoggedIn(r.admin_name + '님', true);
     closeLoginModal();
     window.open('admin.html', 'dshw_admin', 'width=1280,height=900');
 }
@@ -1339,9 +1338,6 @@ async function doAdminLogin() {
 // 로그아웃
 // ─────────────────────────────────────────────
 function doLogout() {
-    localStorage.removeItem('adm_id');
-    localStorage.removeItem('adm_name');
-    localStorage.removeItem('adm_super');
     sessionStorage.removeItem('std_id');
     sessionStorage.removeItem('std_name');
     sessionStorage.removeItem('std_ban');
@@ -1362,12 +1358,10 @@ function updateNavGuest() {
     document.getElementById('navGuest').style.display = 'block';
 }
 
-// 페이지 로드 — 세션 복원 (관리자 우선)
+// 페이지 로드 — 학생 세션만 복원
 (function() {
-    var admName = localStorage.getItem('adm_name');
     var stdName = sessionStorage.getItem('std_name');
-    if (admName)      updateNavLoggedIn(admName + '님', true);
-    else if (stdName) updateNavLoggedIn(stdName + '님', false);
+    if (stdName) updateNavLoggedIn(stdName + '님', false);
 })();
 
 // Enter 키 — input 포커스 상태에서만
