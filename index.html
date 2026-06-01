@@ -897,6 +897,8 @@
                 </div>
                 <div id="navLoggedIn" style="display:none;align-items:center;gap:8px;">
                     <span class="nav-user-name" id="navUserName"></span>
+                    <a id="navAdminLink" style="display:none;cursor:pointer;" class="nav-admin-pill"
+                       onclick="window.open('admin.html','dshw_admin','width=1280,height=900')">관리자</a>
                     <button class="nav-logout-btn" onclick="doLogout()">로그아웃</button>
                 </div>
             </div>
@@ -1174,15 +1176,38 @@
 <div id="loginModal" class="modal-backdrop" style="display:none" onclick="handleModalBackdrop(event)">
     <div class="modal-box" onclick="event.stopPropagation()">
         <button class="modal-close" onclick="closeLoginModal()">✕</button>
-        <div class="modal-title">학생 로그인</div>
-        <div class="modal-sub">학번과 이름을 입력하세요</div>
-        <div class="modal-field">
-            <input type="text" id="genId"   class="modal-input" placeholder="학번 (예: 2501)" maxlength="10">
+
+        <div class="modal-tabs">
+            <button class="modal-tab active" id="tabGeneral" onclick="switchLoginTab('general')">학생 로그인</button>
+            <button class="modal-tab"        id="tabAdmin"   onclick="switchLoginTab('admin')">관리자</button>
         </div>
-        <div class="modal-field">
-            <input type="text" id="genName" class="modal-input" placeholder="이름" maxlength="20">
+
+        <!-- 학생 로그인 -->
+        <div id="formGeneral">
+            <div class="modal-title">학생 로그인</div>
+            <div class="modal-sub">학번과 이름을 입력하세요</div>
+            <div class="modal-field">
+                <input type="text" id="genId"   class="modal-input" placeholder="학번 (예: 2501)" maxlength="10">
+            </div>
+            <div class="modal-field">
+                <input type="text" id="genName" class="modal-input" placeholder="이름" maxlength="20">
+            </div>
+            <button class="modal-btn" id="btnGenLogin" onclick="doStudentLogin()">로그인</button>
         </div>
-        <button class="modal-btn" id="btnGenLogin" onclick="doStudentLogin()">로그인</button>
+
+        <!-- 관리자 로그인 -->
+        <div id="formAdmin" style="display:none">
+            <div class="modal-title">관리자 로그인</div>
+            <div class="modal-sub">관리자 ID와 비밀번호를 입력하세요</div>
+            <div class="modal-field">
+                <input type="text"     id="admId" class="modal-input" placeholder="관리자 ID" maxlength="50" autocomplete="username">
+            </div>
+            <div class="modal-field">
+                <input type="password" id="admPw" class="modal-input" placeholder="비밀번호" maxlength="100" autocomplete="current-password">
+            </div>
+            <button class="modal-btn" id="btnAdmLogin" onclick="doAdminLogin()">로그인</button>
+        </div>
+
         <div class="modal-error"    id="modalError"></div>
         <div class="modal-spin-wrap" id="modalSpinner">
             <div class="m-spin"></div><span>확인 중...</span>
@@ -1220,8 +1245,10 @@ async function callRpc(func, params) {
 }
 
 // ─────────────────────────────────────────────
-// 로그인 모달 (학생 전용)
+// 로그인 모달
 // ─────────────────────────────────────────────
+var _loginTab = 'general';
+
 function openLoginModal(e) {
     if (e) e.preventDefault();
     document.getElementById('loginModal').style.display = 'flex';
@@ -1234,6 +1261,14 @@ function closeLoginModal() {
 }
 function handleModalBackdrop(e) {
     if (e.target === document.getElementById('loginModal')) closeLoginModal();
+}
+function switchLoginTab(tab) {
+    _loginTab = tab;
+    document.getElementById('formGeneral').style.display = tab === 'general' ? 'block' : 'none';
+    document.getElementById('formAdmin').style.display   = tab === 'admin'   ? 'block' : 'none';
+    document.getElementById('tabGeneral').className = 'modal-tab' + (tab === 'general' ? ' active' : '');
+    document.getElementById('tabAdmin').className   = 'modal-tab' + (tab === 'admin'   ? ' active' : '');
+    clearModalState();
 }
 function clearModalState() {
     document.getElementById('modalError').className = 'modal-error';
@@ -1269,14 +1304,44 @@ async function doStudentLogin() {
     sessionStorage.setItem('std_id',   r.student_id);
     sessionStorage.setItem('std_name', r.student_name);
     sessionStorage.setItem('std_ban',  r.student_ban || '');
-    updateNavLoggedIn(r.student_name + '님');
+    updateNavLoggedIn(r.student_name + '님', false);
     closeLoginModal();
 }
 
 // ─────────────────────────────────────────────
-// 로그아웃 (학생)
+// 관리자 로그인 → localStorage 저장 → 새 창 오픈
+// ─────────────────────────────────────────────
+async function doAdminLogin() {
+    var id = document.getElementById('admId').value.trim();
+    var pw = document.getElementById('admPw').value;
+    if (!id || !pw) { showModalError('아이디와 비밀번호를 입력하세요'); return; }
+
+    setModalLoading(true, 'btnAdmLogin');
+    var r = await callRpc('process_admin_login', { p_admin_id: id, p_password: pw });
+    setModalLoading(false, 'btnAdmLogin');
+
+    if (!r || !r.success) {
+        var msgs = { NOT_FOUND:'계정을 찾을 수 없습니다', WRONG_PASSWORD:'비밀번호가 올바르지 않습니다',
+                     LOCKED:'계정이 잠겼습니다', NO_PASSWORD:'비밀번호가 설정되지 않은 계정입니다' };
+        showModalError(msgs[r && r.error] || '로그인 실패');
+        document.getElementById('admPw').value = '';
+        return;
+    }
+    localStorage.setItem('adm_id',    r.admin_id);
+    localStorage.setItem('adm_name',  r.admin_name);
+    localStorage.setItem('adm_super', r.admin_is_super_admin ? '1' : '0');
+    updateNavLoggedIn(r.admin_name + '님', true);
+    closeLoginModal();
+    window.open('admin.html', 'dshw_admin', 'width=1280,height=900');
+}
+
+// ─────────────────────────────────────────────
+// 로그아웃
 // ─────────────────────────────────────────────
 function doLogout() {
+    localStorage.removeItem('adm_id');
+    localStorage.removeItem('adm_name');
+    localStorage.removeItem('adm_super');
     sessionStorage.removeItem('std_id');
     sessionStorage.removeItem('std_name');
     sessionStorage.removeItem('std_ban');
@@ -1286,20 +1351,23 @@ function doLogout() {
 // ─────────────────────────────────────────────
 // 네비 상태
 // ─────────────────────────────────────────────
-function updateNavLoggedIn(displayName) {
+function updateNavLoggedIn(displayName, isAdmin) {
     document.getElementById('navGuest').style.display = 'none';
     document.getElementById('navLoggedIn').style.display = 'flex';
     document.getElementById('navUserName').textContent = displayName;
+    document.getElementById('navAdminLink').style.display = isAdmin ? 'inline' : 'none';
 }
 function updateNavGuest() {
     document.getElementById('navLoggedIn').style.display = 'none';
     document.getElementById('navGuest').style.display = 'block';
 }
 
-// 페이지 로드 — 학생 세션 복원
+// 페이지 로드 — 세션 복원 (관리자 우선)
 (function() {
+    var admName = localStorage.getItem('adm_name');
     var stdName = sessionStorage.getItem('std_name');
-    if (stdName) updateNavLoggedIn(stdName + '님');
+    if (admName)      updateNavLoggedIn(admName + '님', true);
+    else if (stdName) updateNavLoggedIn(stdName + '님', false);
 })();
 
 // Enter 키 — input 포커스 상태에서만
@@ -1309,7 +1377,7 @@ document.addEventListener('keydown', function(e) {
     if (!modal || modal.style.display === 'none') return;
     if ((document.activeElement && document.activeElement.tagName) !== 'INPUT') return;
     e.preventDefault();
-    doStudentLogin();
+    if (_loginTab === 'general') doStudentLogin(); else doAdminLogin();
 });
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
