@@ -660,35 +660,9 @@ async function deleteNotice(id) {
   else alert('삭제 실패');
 }
 
-async function toggleNoticePin(id, currentPin) {
-  var n = _adminNotices.find(function(x) { return x.textnotice_id === id; });
-  if (!n) return;
-  await callRpc('save_notice', {
-    p_admin_id: getAdminId(), p_id: id,
-    p_title: n.textnotice_title, p_body: n.textnotice_body || '',
-    p_owner: n.textnotice_owner || '', p_hidden: n.textnotice_hidden, p_pin: !currentPin
-  });
-  loadAdminNotices();
-}
-
-async function toggleNoticeHidden(id, currentHidden) {
-  var n = _adminNotices.find(function(x) { return x.textnotice_id === id; });
-  if (!n) return;
-  await callRpc('save_notice', {
-    p_admin_id: getAdminId(), p_id: id,
-    p_title: n.textnotice_title, p_body: n.textnotice_body || '',
-    p_owner: n.textnotice_owner || '', p_hidden: !currentHidden, p_pin: n.textnotice_pin
-  });
-  loadAdminNotices();
-}
-
 function showEditError(msg) {
   var el = document.getElementById('editError');
   el.textContent = msg; el.className = 'edit-error show';
-}
-
-function esc(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 // ─────────────────────────────────────────────
@@ -832,27 +806,6 @@ function renderDashboard(data) {
 // ─────────────────────────────────────────────
 // 테이블 렌더링
 // ─────────────────────────────────────────────
-function renderNotices(rows) {
-  const tbody = document.getElementById('noticeTbody');
-  if (!rows || rows.length === 0) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="5">공지사항이 없습니다</td></tr>';
-    return;
-  }
-  tbody.innerHTML = rows.map(function(r) {
-    const date = r.textnotice_date ? r.textnotice_date.substring(0,10) : '—';
-    const badge = r.textnotice_hidden === false
-      ? '<span class="badge b-pub">게시중</span>'
-      : '<span class="badge b-hide">비공개</span>';
-    return '<tr>'
-      + '<td class="td-muted">' + esc(r.textnotice_id || '—') + '</td>'
-      + '<td>' + esc(r.textnotice_title || '') + '</td>'
-      + '<td class="td-muted">' + date + '</td>'
-      + '<td>' + (r.textnotice_readcnt ?? 0) + '</td>'
-      + '<td>' + badge + '</td>'
-      + '</tr>';
-  }).join('');
-}
-
 function renderAdminLogins(rows) {
   const tbody = document.getElementById('adminTbody');
   if (!rows || rows.length === 0) {

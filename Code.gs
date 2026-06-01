@@ -133,16 +133,9 @@ function supabaseRequest_(method, query, payload) {
     muteHttpExceptions: true,
   };
 
-  // 실제 요청/응답 로그 확인용 추가
   const response = UrlFetchApp.fetch(url, options);
   const statusCode = response.getResponseCode();
   const responseText = response.getContentText();
-
-  // 로그로 상세 오류 확인
-  console.log('STATUS:', statusCode);
-  console.log('RESPONSE:', responseText);
-  console.log('URL:', url);
-  console.log('KEY 앞 20자:', CONFIG.SUPABASE_KEY.substring(0, 20));
 
   if (statusCode < 200 || statusCode >= 300) {
     throw new Error(`HTTP ${statusCode}: ${responseText}`);
