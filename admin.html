@@ -255,6 +255,7 @@
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
       gap: 12px;
+      margin-bottom: 16px;
     }
 
     .stat-card {
@@ -406,7 +407,6 @@
         <span class="nav-badge">Admin</span>
       </div>
       <div class="nav-right">
-        <span id="navSuper" class="nav-super" style="display:none">슈퍼관리자</span>
         <span class="nav-user" id="navName"></span>
         <button class="btn-logout" onclick="doLogout()">로그아웃</button>
       </div>
@@ -453,7 +453,7 @@
     <!-- 슈퍼관리자 전용 -->
     <div id="superSection" style="display:none">
       <div class="card">
-        <div class="card-head"><span class="card-title">관리자 로그인 이력</span></div>
+        <div class="card-head"><span class="card-title">등록 관리자</span></div>
         <table class="data-table">
           <thead>
             <tr><th>이름</th><th>이메일</th><th>역할</th><th>마지막 로그인</th></tr>
@@ -551,6 +551,7 @@ async function doLogin() {
   }
 
   saveSession(login.admin_id, login.admin_name, login.admin_is_super_admin);
+  document.getElementById('inputPw').value = '';
 
   // 2. 대시보드 데이터 로드
   const data = await callRpc('get_admin_dashboard_data', { p_admin_id: login.admin_id });
@@ -585,7 +586,6 @@ function renderDashboard(data) {
   const superAdmin = isSuperAdmin();
 
   document.getElementById('navName').textContent = adminName;
-  if (superAdmin) document.getElementById('navSuper').style.display = 'inline';
 
   const d = new Date();
   document.getElementById('pageDate').textContent =
