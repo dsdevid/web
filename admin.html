@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>관리자 | 강남대성기숙 의대관</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --blue:      #0066cc;
+      --blue-f:    #0071e3;
+      --ink:       #1d1d1f;
+      --ink-48:    #7a7a7a;
+      --ink-muted: #6e6e73;
+      --canvas:    #ffffff;
+      --parchment: #f5f5f7;
+      --nav-black: #000000;
+      --hairline:  #e0e0e0;
+      --divider:   #f0f0f0;
+      --danger:    #d93025;
+    }
+
+    body {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      background: var(--parchment);
+      color: var(--ink);
+      font-size: 15px;
+      line-height: 1.47;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── 로그인 화면 ── */
+    .login-page {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .login-box {
+      background: var(--canvas);
+      border: 1px solid var(--hairline);
+      border-radius: 18px;
+      padding: 40px 36px;
+      width: 100%;
+      max-width: 380px;
+    }
+
+    .login-logo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 28px;
+    }
+
+    .login-logo img {
+      height: 22px;
+      object-fit: contain;
+    }
+
+    .login-title {
+      font-size: 21px;
+      font-weight: 600;
+      letter-spacing: -0.374px;
+      color: var(--ink);
+      text-align: center;
+      margin-bottom: 4px;
+    }
+
+    .login-sub {
+      font-size: 13px;
+      color: var(--ink-muted);
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .form-group { margin-bottom: 14px; }
+
+    .form-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--ink-muted);
+      letter-spacing: 0.3px;
+      margin-bottom: 6px;
+    }
+
+    .form-input {
+      width: 100%;
+      height: 44px;
+      padding: 0 16px;
+      border: 1px solid var(--hairline);
+      border-radius: 10px;
+      font-size: 15px;
+      font-family: inherit;
+      color: var(--ink);
+      background: var(--canvas);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .form-input:focus {
+      border-color: var(--blue);
+      outline: 2px solid rgba(0,102,204,0.15);
+      outline-offset: 0;
+    }
+
+    .btn-login {
+      width: 100%;
+      height: 44px;
+      background: var(--ink);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: background 0.15s, transform 0.1s;
+    }
+
+    .btn-login:hover { background: #333; }
+    .btn-login:active { transform: scale(0.98); }
+    .btn-login:disabled { background: #ccc; cursor: not-allowed; }
+
+    .login-error {
+      display: none;
+      font-size: 13px;
+      color: var(--danger);
+      text-align: center;
+      margin-top: 12px;
+      padding: 10px 14px;
+      background: #fff5f4;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+    }
+
+    .login-error.show { display: block; }
+
+    /* ── 로딩 스피너 ── */
+    .spinner-wrap {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 16px;
+      color: var(--ink-muted);
+      font-size: 13px;
+    }
+
+    .spinner-wrap.show { display: flex; }
+
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2px solid var(--hairline);
+      border-top-color: var(--blue);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── 관리자 앱 ── */
+    #adminApp { display: none; }
+
+    .admin-nav {
+      background: var(--nav-black);
+      height: 44px;
+      position: sticky;
+      top: 0;
+      z-index: 200;
+    }
+
+    .nav-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .nav-left { display: flex; align-items: center; gap: 14px; }
+
+    .nav-logo img {
+      height: 20px;
+      filter: brightness(0) invert(1);
+    }
+
+    .nav-badge {
+      font-size: 10px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.55);
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 4px;
+    }
+
+    .nav-right { display: flex; align-items: center; gap: 10px; }
+
+    .nav-user { font-size: 12px; color: rgba(255,255,255,0.65); }
+
+    .nav-super {
+      font-size: 10px; font-weight: 600;
+      color: #fbbf24;
+      background: rgba(251,191,36,0.15);
+      padding: 2px 7px; border-radius: 4px;
+    }
+
+    .btn-logout {
+      font-size: 12px;
+      color: rgba(255,255,255,0.65);
+      background: none;
+      border: 1px solid rgba(255,255,255,0.18);
+      padding: 4px 12px;
+      border-radius: 9999px;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+    }
+
+    .btn-logout:hover { color: #fff; border-color: rgba(255,255,255,0.45); }
+
+    /* ── 대시보드 레이아웃 ── */
+    .page-wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 24px 48px;
+    }
+
+    .page-title {
+      font-size: 28px; font-weight: 600;
+      letter-spacing: -0.374px;
+      margin-bottom: 4px;
+    }
+
+    .page-sub { font-size: 13px; color: var(--ink-muted); margin-bottom: 28px; }
+
+    .section-label {
+      font-size: 11px; font-weight: 600;
+      letter-spacing: 0.6px; text-transform: uppercase;
+      color: var(--ink-muted);
+      margin-bottom: 10px; margin-top: 28px;
+    }
+
+    /* ── 통계 카드 ── */
+    .stat-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 12px;
+    }
+
+    .stat-card {
+      background: var(--canvas);
+      border: 1px solid var(--hairline);
+      border-radius: 14px;
+      padding: 20px 20px 16px;
+    }
+
+    .sc-num { font-size: 32px; font-weight: 600; letter-spacing: -0.374px; line-height: 1; }
+    .sc-label { font-size: 13px; font-weight: 600; margin-top: 8px; }
+    .sc-sub { font-size: 11px; color: var(--ink-muted); margin-top: 2px; }
+
+    /* ── 카드 ── */
+    .card {
+      background: var(--canvas);
+      border: 1px solid var(--hairline);
+      border-radius: 14px;
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+
+    .card-head {
+      height: 52px; padding: 0 20px;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid var(--hairline);
+      background: #d8d8dc;
+    }
+
+    .card-title { font-size: 15px; font-weight: 600; }
+
+    .card-link {
+      font-size: 13px; color: var(--blue);
+      text-decoration: none; background: none; border: none; cursor: pointer;
+    }
+
+    /* ── 빠른 액션 ── */
+    .action-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 10px; padding: 16px 20px;
+    }
+
+    .action-btn {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 6px; padding: 16px 12px;
+      background: var(--parchment);
+      border: 1px solid var(--hairline); border-radius: 10px;
+      text-decoration: none; cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+    }
+
+    .action-btn:hover { background: #e8e8ec; }
+    .action-btn:active { transform: scale(0.97); }
+    .action-icon { font-size: 24px; }
+    .action-label { font-size: 13px; font-weight: 600; color: var(--ink); }
+    .action-sub { font-size: 11px; color: var(--ink-muted); }
+
+    /* ── 테이블 ── */
+    .data-table { width: 100%; border-collapse: collapse; }
+
+    .data-table th {
+      padding: 9px 20px;
+      font-size: 11px; font-weight: 600; letter-spacing: 0.3px;
+      text-transform: uppercase; color: var(--ink-muted);
+      text-align: left; background: var(--parchment);
+      border-bottom: 1px solid var(--hairline);
+    }
+
+    .data-table td {
+      padding: 12px 20px; font-size: 13px;
+      border-bottom: 1px solid var(--divider);
+    }
+
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tbody tr:hover td { background: var(--parchment); }
+
+    .td-muted { color: var(--ink-muted); }
+
+    .badge {
+      display: inline-block; font-size: 10px; font-weight: 600;
+      padding: 2px 7px; border-radius: 4px;
+    }
+
+    .b-pub   { background: #d1f5d3; color: #1a6625; }
+    .b-hide  { background: var(--parchment); color: var(--ink-48); }
+    .b-super { background: rgba(251,191,36,0.2); color: #92400e; }
+    .b-admin { background: #dbeafe; color: #1e40af; }
+
+    .empty-row td { padding: 28px 20px; text-align: center; color: var(--ink-muted); }
+
+    /* ── 반응형 ── */
+    @media (max-width: 480px) {
+      .login-box { padding: 28px 20px; }
+      .page-wrap { padding: 20px 16px 40px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════
+     로그인 화면
+══════════════════════════════════ -->
+<div id="loginPage" class="login-page">
+  <div class="login-box">
+
+    <div class="login-logo">
+      <img src="https://img.dshw.co.kr/resources/DESIGN/nimg/common/logo_campusm_202111.png"
+           alt="대성기숙" onerror="this.style.display='none'">
+    </div>
+
+    <div class="login-title">관리자 로그인</div>
+    <div class="login-sub">강남대성기숙 의대관</div>
+
+    <div class="form-group">
+      <label class="form-label" for="inputId">관리자 ID</label>
+      <input id="inputId" type="text" class="form-input"
+             placeholder="아이디 입력" autocomplete="username">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="inputPw">비밀번호</label>
+      <input id="inputPw" type="password" class="form-input"
+             placeholder="비밀번호 입력" autocomplete="current-password">
+    </div>
+
+    <button id="btnLogin" class="btn-login" onclick="doLogin()">로그인</button>
+
+    <div id="loginError" class="login-error"></div>
+    <div id="loginSpinner" class="spinner-wrap">
+      <div class="spinner"></div>
+      <span>확인 중...</span>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     관리자 대시보드
+══════════════════════════════════ -->
+<div id="adminApp">
+
+  <nav class="admin-nav">
+    <div class="nav-inner">
+      <div class="nav-left">
+        <img src="https://img.dshw.co.kr/resources/DESIGN/nimg/common/logo_campusm_202111.png"
+             alt="대성기숙" style="height:20px;filter:brightness(0) invert(1);"
+             onerror="this.style.display='none'">
+        <span class="nav-badge">Admin</span>
+      </div>
+      <div class="nav-right">
+        <span id="navSuper" class="nav-super" style="display:none">슈퍼관리자</span>
+        <span class="nav-user" id="navName"></span>
+        <button class="btn-logout" onclick="doLogout()">로그아웃</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="page-wrap">
+
+    <div class="page-title">관리자 대시보드</div>
+    <div class="page-sub" id="pageDate"></div>
+
+    <!-- 통계 -->
+    <div class="section-label">현황</div>
+    <div class="stat-row">
+      <div class="stat-card">
+        <div class="sc-num" id="statToday">—</div>
+        <div class="sc-label">오늘 등록 공지</div>
+        <div class="sc-sub">건</div>
+      </div>
+      <div class="stat-card">
+        <div class="sc-num" id="statRecent">—</div>
+        <div class="sc-label">최근 공지 조회</div>
+        <div class="sc-sub">건 (최대 5)</div>
+      </div>
+    </div>
+
+    <!-- 빠른 액션 -->
+    <div class="section-label">관리</div>
+    <div class="card">
+      <div class="action-grid">
+        <a href="#" class="action-btn">
+          <span class="action-icon">📢</span>
+          <span class="action-label">공지 등록</span>
+          <span class="action-sub">Sheets 연동</span>
+        </a>
+        <a href="#" class="action-btn">
+          <span class="action-icon">📄</span>
+          <span class="action-label">주간공지 등록</span>
+          <span class="action-sub">PDF 업로드</span>
+        </a>
+        <a href="#" class="action-btn">
+          <span class="action-icon">👥</span>
+          <span class="action-label">학생 관리</span>
+          <span class="action-sub">등록/수정/삭제</span>
+        </a>
+        <a href="#" class="action-btn">
+          <span class="action-icon">📊</span>
+          <span class="action-label">접속 현황</span>
+          <span class="action-sub">모니터링</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- 최근 공지사항 -->
+    <div class="section-label">최근 공지사항</div>
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">최근 5건</span>
+        <a href="#" class="card-link">전체보기</a>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>ID</th><th>제목</th><th>등록일</th><th>조회수</th><th>게시</th>
+          </tr>
+        </thead>
+        <tbody id="noticeTbody">
+          <tr class="empty-row"><td colspan="5">로딩 중...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 슈퍼관리자 전용 -->
+    <div id="superSection" style="display:none">
+      <div class="section-label">관리자 로그인 이력 <span style="color:#fbbf24">★ 슈퍼관리자 전용</span></div>
+      <div class="card">
+        <div class="card-head"><span class="card-title">최근 5건</span></div>
+        <table class="data-table">
+          <thead>
+            <tr><th>이름</th><th>이메일</th><th>역할</th><th>마지막 로그인</th></tr>
+          </thead>
+          <tbody id="adminTbody">
+            <tr class="empty-row"><td colspan="4">데이터 없음</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+// 세션 관리 (sessionStorage)
+// ─────────────────────────────────────────────
+const SESSION_KEY = 'adm_token';
+const SESSION_NAME = 'adm_name';
+const SESSION_SUPER = 'adm_super';
+
+function getStoredToken() { return sessionStorage.getItem(SESSION_KEY); }
+
+function saveSession(token, name, isSuperAdmin) {
+  sessionStorage.setItem(SESSION_KEY, token);
+  sessionStorage.setItem(SESSION_NAME, name);
+  sessionStorage.setItem(SESSION_SUPER, isSuperAdmin ? '1' : '0');
+}
+
+function clearSession() {
+  sessionStorage.removeItem(SESSION_KEY);
+  sessionStorage.removeItem(SESSION_NAME);
+  sessionStorage.removeItem(SESSION_SUPER);
+}
+
+// ─────────────────────────────────────────────
+// 페이지 로드: 기존 세션 있으면 대시보드 바로 로드
+// ─────────────────────────────────────────────
+window.addEventListener('load', function() {
+  const token = getStoredToken();
+  if (token) {
+    showLoginLoading(true);
+    google.script.run
+      .withSuccessHandler(function(data) {
+        showLoginLoading(false);
+        initDashboard(data, token);
+      })
+      .withFailureHandler(function() {
+        showLoginLoading(false);
+        clearSession();
+        // 세션 만료 — 로그인 폼 유지
+      })
+      .getAdminDashboardData(token);
+  }
+});
+
+// ─────────────────────────────────────────────
+// 로그인
+// ─────────────────────────────────────────────
+function doLogin() {
+  const adminId = document.getElementById('inputId').value.trim();
+  const password = document.getElementById('inputPw').value;
+
+  if (!adminId || !password) {
+    showLoginError('아이디와 비밀번호를 입력하세요');
+    return;
+  }
+
+  showLoginLoading(true);
+  hideLoginError();
+
+  google.script.run
+    .withSuccessHandler(function(result) {
+      showLoginLoading(false);
+
+      if (!result || !result.success) {
+        showLoginError(result ? result.message : '서버 오류가 발생했습니다');
+        document.getElementById('inputPw').value = '';
+        return;
+      }
+
+      saveSession(result.token, result.name, result.isSuperAdmin);
+
+      // 대시보드 데이터 로드
+      showLoginLoading(true);
+      google.script.run
+        .withSuccessHandler(function(data) {
+          showLoginLoading(false);
+          initDashboard(data, result.token);
+        })
+        .withFailureHandler(function(e) {
+          showLoginLoading(false);
+          showLoginError('대시보드 로드 실패: ' + (e && e.message || '알 수 없는 오류'));
+        })
+        .getAdminDashboardData(result.token);
+    })
+    .withFailureHandler(function(e) {
+      showLoginLoading(false);
+      showLoginError('서버 오류: ' + (e && e.message || '알 수 없는 오류'));
+    })
+    .adminLogin(adminId, password);
+}
+
+// Enter 키 로그인
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && document.getElementById('loginPage').style.display !== 'none') {
+    doLogin();
+  }
+});
+
+// ─────────────────────────────────────────────
+// 로그아웃
+// ─────────────────────────────────────────────
+function doLogout() {
+  if (!confirm('로그아웃 하시겠습니까?')) return;
+  const token = getStoredToken();
+  clearSession();
+  google.script.run.adminLogout(token);
+  showLoginView();
+}
+
+// ─────────────────────────────────────────────
+// 대시보드 초기화
+// ─────────────────────────────────────────────
+function initDashboard(data, token) {
+  if (!data || !data.admin) {
+    clearSession();
+    showLoginError('세션이 만료되었습니다. 다시 로그인하세요');
+    return;
+  }
+
+  const admin = data.admin;
+
+  // Nav
+  document.getElementById('navName').textContent = admin.name;
+  if (admin.isSuperAdmin) document.getElementById('navSuper').style.display = 'inline';
+
+  // 날짜
+  const d = new Date();
+  document.getElementById('pageDate').textContent =
+    d.getFullYear() + '.' +
+    String(d.getMonth()+1).padStart(2,'0') + '.' +
+    String(d.getDate()).padStart(2,'0') + ' 기준';
+
+  // 통계
+  document.getElementById('statToday').textContent = data.todayCount ?? 0;
+  document.getElementById('statRecent').textContent = data.recentNotices.length;
+
+  // 공지 테이블
+  renderNotices(data.recentNotices);
+
+  // 슈퍼관리자
+  if (admin.isSuperAdmin && data.adminLogins) {
+    document.getElementById('superSection').style.display = 'block';
+    renderAdminLogins(data.adminLogins);
+  }
+
+  // 화면 전환
+  document.getElementById('loginPage').style.display = 'none';
+  document.getElementById('adminApp').style.display = 'block';
+}
+
+// ─────────────────────────────────────────────
+// 테이블 렌더링
+// ─────────────────────────────────────────────
+function renderNotices(rows) {
+  const tbody = document.getElementById('noticeTbody');
+  if (!rows || rows.length === 0) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="5">공지사항이 없습니다</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(function(r) {
+    const date = r.textnotice_date ? r.textnotice_date.substring(0,10) : '—';
+    const badge = r.textnotice_hidden === false
+      ? '<span class="badge b-pub">게시중</span>'
+      : '<span class="badge b-hide">비공개</span>';
+    return '<tr>'
+      + '<td class="td-muted">' + esc(r.textnotice_id || '—') + '</td>'
+      + '<td>' + esc(r.textnotice_title || '') + '</td>'
+      + '<td class="td-muted">' + date + '</td>'
+      + '<td>' + (r.textnotice_readcnt ?? 0) + '</td>'
+      + '<td>' + badge + '</td>'
+      + '</tr>';
+  }).join('');
+}
+
+function renderAdminLogins(rows) {
+  const tbody = document.getElementById('adminTbody');
+  if (!rows || rows.length === 0) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="4">이력 없음</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(function(r) {
+    const date = r.admin_last_login_at
+      ? r.admin_last_login_at.substring(0,16).replace('T',' ')
+      : '—';
+    const badge = r.admin_is_super_admin
+      ? '<span class="badge b-super">슈퍼관리자</span>'
+      : '<span class="badge b-admin">관리자</span>';
+    return '<tr>'
+      + '<td>' + esc(r.admin_name || '') + '</td>'
+      + '<td class="td-muted">' + esc(r.admin_email || '') + '</td>'
+      + '<td>' + badge + '</td>'
+      + '<td class="td-muted">' + date + '</td>'
+      + '</tr>';
+  }).join('');
+}
+
+// ─────────────────────────────────────────────
+// UI 헬퍼
+// ─────────────────────────────────────────────
+function showLoginView() {
+  document.getElementById('adminApp').style.display = 'none';
+  document.getElementById('loginPage').style.display = 'flex';
+  document.getElementById('inputPw').value = '';
+}
+
+function showLoginLoading(on) {
+  const sp = document.getElementById('loginSpinner');
+  const btn = document.getElementById('btnLogin');
+  sp.className = on ? 'spinner-wrap show' : 'spinner-wrap';
+  btn.disabled = on;
+}
+
+function showLoginError(msg) {
+  const el = document.getElementById('loginError');
+  el.textContent = msg;
+  el.className = 'login-error show';
+}
+
+function hideLoginError() {
+  document.getElementById('loginError').className = 'login-error';
+}
+
+function esc(str) {
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+
+</body>
+</html>

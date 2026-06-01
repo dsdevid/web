@@ -1,6 +1,1467 @@
 <!DOCTYPE html>
-<html lang="ko"><head><meta charset="UTF-8"><title>DSWebsite</title></head>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>강남대성기숙 의대관</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --blue:         #0066cc;
+            --blue-focus:   #0071e3;
+            --blue-dark:    #2997ff;
+            --ink:          #1d1d1f;
+            --ink-80:       #333333;
+            --ink-48:       #7a7a7a;
+            --ink-muted:    #6e6e73;
+            --canvas:       #ffffff;
+            --parchment:    #f5f5f7;
+            --pearl:        #fafafc;
+            --tile-1:       #272729;
+            --tile-2:       #2a2a2c;
+            --nav-black:    #000000;
+            --hairline:     #e0e0e0;
+            --divider:      #f0f0f0;
+        }
+
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+            background: var(--parchment);
+            color: var(--ink);
+            font-size: 17px;
+            line-height: 1.47;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ── Global Nav ── */
+        .global-nav {
+            background: var(--nav-black);
+            height: 44px;
+            position: sticky;
+            top: 0;
+            z-index: 200;
+        }
+
+        .nav-inner {
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 0 24px;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .nav-logo img {
+            height: 22px;
+            object-fit: contain;
+            filter: brightness(0) invert(1);
+            display: block;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: rgba(255,255,255,0.85);
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 400;
+            letter-spacing: -0.12px;
+            padding: 0 10px;
+            transition: color 0.15s;
+        }
+
+        .nav-links a:hover { color: #fff; }
+
+        .nav-right { display: flex; align-items: center; }
+
+        .nav-pill {
+            background: var(--blue);
+            color: #fff !important;
+            padding: 5px 14px;
+            border-radius: 9999px;
+            font-size: 12px !important;
+            letter-spacing: -0.12px !important;
+            text-decoration: none;
+            transition: background 0.15s;
+        }
+
+        .nav-pill:hover { background: var(--blue-focus); }
+
+        .nav-toggle {
+            display: none;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 6px;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .nav-toggle span {
+            display: block;
+            width: 18px;
+            height: 1.5px;
+            background: rgba(255,255,255,0.85);
+            border-radius: 1px;
+        }
+
+        .mobile-nav {
+            display: none;
+            flex-direction: column;
+            background: var(--tile-2);
+            padding: 8px 24px 16px;
+        }
+
+        .mobile-nav a {
+            text-decoration: none;
+            color: rgba(255,255,255,0.85);
+            font-size: 15px;
+            font-weight: 400;
+            letter-spacing: -0.12px;
+            padding: 13px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.07);
+        }
+
+        .mobile-nav a:last-child { border-bottom: none; }
+
+        .mobile-nav .nav-pill {
+            display: block;
+            text-align: center;
+            margin-top: 12px;
+            padding: 11px 0;
+            border-bottom: none !important;
+        }
+
+        /* ── Hero Tile ── */
+        .hero-tile {
+            background: #016cca;
+            padding: 64px 24px;
+            position: relative;
+            min-height: 170px;
+            display: flex;
+            align-items: center;
+        }
+
+        .hero-quote-wrap {
+            max-width: 980px;
+            margin: 0 auto;
+            width: 100%;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-quote {
+            font-size: clamp(22px, 3vw, 34px);
+            font-weight: 600;
+            letter-spacing: -0.374px;
+            line-height: 1.45;
+            color: #ffffff;
+            max-width: 560px;
+        }
+
+        .btn-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--blue);
+            color: #fff;
+            padding: 11px 22px;
+            border-radius: 9999px;
+            font-size: 17px;
+            font-weight: 400;
+            letter-spacing: -0.374px;
+            text-decoration: none;
+            transition: transform 0.1s, background 0.15s;
+        }
+
+        .btn-pill:hover { background: var(--blue-focus); }
+        .btn-pill:active { transform: scale(0.95); }
+
+        .btn-pill-ghost {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: transparent;
+            color: var(--blue);
+            padding: 11px 22px;
+            border-radius: 9999px;
+            border: 1px solid var(--blue);
+            font-size: 17px;
+            font-weight: 400;
+            letter-spacing: -0.374px;
+            text-decoration: none;
+            transition: transform 0.1s;
+        }
+
+        .btn-pill-ghost:active { transform: scale(0.95); }
+
+        /* ── Stats Strip ── */
+        .stats-strip {
+            background: var(--canvas);
+            border-top: 1px solid var(--hairline);
+            border-bottom: 1px solid var(--hairline);
+        }
+
+        .stats-strip-inner {
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 0 24px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+        }
+
+        .stat-cell {
+            padding: 20px 16px;
+            text-align: center;
+            border-right: 1px solid var(--hairline);
+        }
+
+        .stat-cell:last-child { border-right: none; }
+
+        .stat-num {
+            font-size: 28px;
+            font-weight: 600;
+            letter-spacing: -0.374px;
+            color: var(--ink);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            font-weight: 400;
+            letter-spacing: -0.12px;
+            color: var(--ink-muted);
+            margin-top: 4px;
+        }
+
+        /* ── Main Layout ── */
+        .main-wrap {
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 48px 24px;
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 20px;
+            align-items: start;
+        }
+
+        /* ── Quick Grid ── */
+        .quick-grid {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        /* Flip Card */
+        .flip-card {
+            width: 140px;
+            flex-shrink: 0;
+            height: 140px;
+            perspective: 1000px;
+        }
+
+        .flip-card-inner {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s;
+        }
+
+        .flip-card:hover .flip-card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .flip-card-front,
+        .flip-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 18px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 14px 10px;
+            text-align: center;
+        }
+
+        .flip-card-front {
+            background: var(--canvas);
+            border: 1px solid var(--hairline);
+            transform: rotateY(0deg);
+        }
+
+        .flip-card-back {
+            background: #6b7280;
+            transform: rotateY(180deg);
+        }
+
+        .qt-icon { font-size: 46px; }
+
+        .qt-name {
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: -0.224px;
+            color: #ffffff;
+        }
+
+        .qt-back-desc {
+            font-size: 12px;
+            letter-spacing: -0.12px;
+            color: rgba(255,255,255,0.85);
+            line-height: 1.4;
+        }
+
+        .qt-back-link {
+            display: inline-block;
+            margin-top: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #fff;
+            background: rgba(255,255,255,0.2);
+            padding: 5px 14px;
+            border-radius: 9999px;
+            text-decoration: none;
+            letter-spacing: -0.12px;
+            transition: background 0.15s;
+        }
+
+        .qt-back-link:hover { background: rgba(255,255,255,0.35); }
+
+        /* 카드별 앞면 색상 */
+        .flip-card:nth-child(1) .flip-card-front { background: #1d6fe8; border-color: #1d6fe8; }
+        .flip-card:nth-child(2) .flip-card-front { background: #16a34a; border-color: #16a34a; }
+        .flip-card:nth-child(3) .flip-card-front { background: #d97706; border-color: #d97706; }
+        .flip-card:nth-child(4) .flip-card-front { background: #7c3aed; border-color: #7c3aed; }
+
+        /* 터치 기기: CSS hover 비활성화 */
+        @media (pointer: coarse) {
+            .flip-card:hover .flip-card-inner {
+                transform: rotateY(0deg);
+            }
+        }
+
+        /* ── Utility Card ── */
+        .u-card {
+            background: var(--canvas);
+            border: 1px solid var(--hairline);
+            border-radius: 18px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .u-card-head {
+            padding: 0 24px;
+            height: 57px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--hairline);
+            background: #d8d8dc;
+        }
+
+        .u-title {
+            font-size: 21px;
+            font-weight: 600;
+            letter-spacing: 0.231px;
+            color: var(--ink);
+        }
+
+        .u-badge {
+            font-size: 12px;
+            font-weight: 400;
+            color: var(--ink-48);
+            letter-spacing: -0.12px;
+            margin-left: 8px;
+        }
+
+        .u-more {
+            font-size: 14px;
+            font-weight: 400;
+            letter-spacing: -0.224px;
+            color: var(--blue);
+            text-decoration: none;
+        }
+
+        /* Notice */
+        .notice-list { list-style: none; }
+
+        .n-row {
+            display: flex;
+            align-items: center;
+            padding: 13px 24px;
+            border-bottom: 1px solid var(--divider);
+            text-decoration: none;
+            gap: 10px;
+            transition: background 0.1s;
+        }
+
+        .n-row:last-child { border-bottom: none; }
+        .n-row:hover { background: var(--parchment); }
+
+        .n-badge {
+            font-size: 10px;
+            font-weight: 600;
+            padding: 3px 7px;
+            border-radius: 5px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .n-pin { background: #fff3cd; color: #856404; }
+        .n-new { background: #d1f5d3; color: #1a6625; }
+        .n-gen { background: var(--parchment); color: var(--ink-48); }
+
+        .n-title {
+            flex: 1;
+            font-size: 14px;
+            font-weight: 400;
+            letter-spacing: -0.224px;
+            color: var(--ink);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .n-date {
+            font-size: 12px;
+            letter-spacing: -0.12px;
+            color: var(--ink-48);
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        /* Weekly */
+        .weekly-list { list-style: none; }
+
+        .w-row {
+            display: flex;
+            align-items: center;
+            padding: 12px 24px;
+            border-bottom: 1px solid var(--divider);
+            text-decoration: none;
+            gap: 14px;
+            transition: background 0.1s;
+        }
+
+        .w-row:last-child { border-bottom: none; }
+        .w-row:hover { background: var(--parchment); }
+
+        .w-num {
+            width: 36px;
+            height: 36px;
+            background: var(--parchment);
+            border: 1px solid var(--hairline);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: -0.12px;
+            color: var(--ink);
+            flex-shrink: 0;
+        }
+
+        .w-info { flex: 1; overflow: hidden; }
+
+        .w-title {
+            font-size: 14px;
+            font-weight: 400;
+            letter-spacing: -0.224px;
+            color: var(--ink);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .w-meta {
+            font-size: 12px;
+            letter-spacing: -0.12px;
+            color: var(--ink-48);
+            margin-top: 2px;
+        }
+
+        /* Stats Boxes */
+        .stats-boxes {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            padding: 20px 24px;
+        }
+
+        .stats-box {
+            border: 1px solid var(--hairline);
+            border-radius: 11px;
+            padding: 20px 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.15s;
+        }
+
+        .stats-box:hover { transform: translateY(-1px); }
+
+        .sb-num {
+            font-size: 24px;
+            font-weight: 600;
+            letter-spacing: -0.374px;
+            color: var(--ink);
+        }
+
+        .sb-label {
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: -0.224px;
+            color: var(--ink);
+            margin-top: 6px;
+        }
+
+        .sb-sub {
+            font-size: 11px;
+            letter-spacing: -0.08px;
+            color: var(--ink-48);
+            margin-top: 4px;
+        }
+
+        .stats-note {
+            font-size: 12px;
+            letter-spacing: -0.12px;
+            color: var(--ink-48);
+            padding: 0 24px 20px;
+            text-align: center;
+        }
+
+        /* ── Sidebar ── */
+        .login-tile {
+            background: var(--tile-1);
+            border-radius: 18px;
+            padding: 28px 24px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .login-tile h3 {
+            font-size: 21px;
+            font-weight: 600;
+            letter-spacing: 0.231px;
+            color: #fff;
+            margin-bottom: 8px;
+        }
+
+        .login-tile p {
+            font-size: 14px;
+            font-weight: 400;
+            letter-spacing: -0.224px;
+            color: rgba(255,255,255,0.72);
+            margin-bottom: 20px;
+            line-height: 1.47;
+        }
+
+        .btn-google {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: var(--blue);
+            color: #fff;
+            padding: 11px 20px;
+            border-radius: 9999px;
+            font-size: 14px;
+            font-weight: 400;
+            letter-spacing: -0.224px;
+            text-decoration: none;
+            transition: background 0.15s, transform 0.1s;
+        }
+
+        .btn-google:hover { background: var(--blue-focus); }
+        .btn-google:active { transform: scale(0.95); }
+
+        .g-icon { width: 16px; height: 16px; flex-shrink: 0; }
+
+        /* Sidebar stat rows */
+        .s-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 11px 24px;
+            border-bottom: 1px solid var(--divider);
+            font-size: 14px;
+            letter-spacing: -0.224px;
+        }
+
+        .s-row:last-child { border-bottom: none; }
+        .s-row-lbl { color: var(--ink-muted); }
+        .s-row-val { font-weight: 600; color: var(--ink); }
+
+        /* Rules */
+        .rules-wrap { padding: 12px 24px 16px; }
+
+        .rule-cat {
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: -0.12px;
+            color: var(--ink);
+            padding: 5px 10px;
+            background: var(--parchment);
+            border-radius: 6px;
+            margin-bottom: 6px;
+            margin-top: 10px;
+        }
+
+        .rule-cat:first-child { margin-top: 0; }
+
+        .rule-ln {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            letter-spacing: -0.12px;
+            color: var(--ink-muted);
+            padding: 5px 4px;
+            border-bottom: 1px solid var(--divider);
+        }
+
+        .rule-ln:last-of-type { border-bottom: none; }
+
+        .rule-pt {
+            font-weight: 600;
+            color: #d93025;
+            margin-left: 8px;
+            white-space: nowrap;
+        }
+
+        /* Search */
+        .search-wrap { padding: 16px 24px; }
+
+        .search-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .search-field {
+            flex: 1;
+            padding: 11px 16px;
+            border: 1px solid rgba(0,0,0,0.08);
+            border-radius: 9999px;
+            font-size: 14px;
+            font-family: inherit;
+            letter-spacing: -0.224px;
+            color: var(--ink);
+            background: var(--canvas);
+            outline: none;
+            height: 44px;
+        }
+
+        .search-field:focus {
+            border-color: var(--blue);
+            outline: 2px solid var(--blue-focus);
+            outline-offset: -1px;
+        }
+
+        .search-go {
+            width: 44px;
+            height: 44px;
+            background: var(--ink);
+            color: #fff;
+            border: none;
+            border-radius: 9999px;
+            cursor: pointer;
+            font-size: 15px;
+            flex-shrink: 0;
+            transition: transform 0.1s;
+        }
+
+        .search-go:active { transform: scale(0.95); }
+
+        .chips {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .chip {
+            font-size: 12px;
+            letter-spacing: -0.12px;
+            color: var(--blue);
+            padding: 5px 12px;
+            border: 1px solid var(--blue);
+            border-radius: 9999px;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+        }
+
+        .chip:hover { background: var(--blue); color: #fff; }
+
+        /* ── Footer ── */
+        footer {
+            background: var(--parchment);
+            border-top: 1px solid var(--hairline);
+            padding: 48px 24px 32px;
+        }
+
+        .footer-inner {
+            max-width: 980px;
+            margin: 0 auto;
+        }
+
+        .footer-name {
+            font-size: 12px;
+            font-weight: 400;
+            letter-spacing: -0.12px;
+            color: var(--ink-muted);
+            margin-bottom: 4px;
+        }
+
+        .footer-legal {
+            font-size: 12px;
+            letter-spacing: -0.12px;
+            color: var(--ink-48);
+            border-top: 1px solid var(--hairline);
+            padding-top: 16px;
+            margin-top: 16px;
+            line-height: 1.0;
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 1024px) {
+            .main-wrap { grid-template-columns: 1fr; }
+
+            .sidebar-col {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 20px;
+            }
+
+            .login-tile { margin-bottom: 0; }
+        }
+
+        @media (max-width: 833px) {
+            .nav-links { display: none; }
+            .nav-toggle { display: flex; }
+            .nav-right { display: none; }
+
+            .stats-strip-inner { grid-template-columns: repeat(2, 1fr); }
+            .stat-cell:nth-child(2) { border-right: none; }
+            .stat-cell:nth-child(3) { border-top: 1px solid var(--hairline); }
+            .stat-cell:nth-child(4) { border-top: 1px solid var(--hairline); border-right: none; }
+
+            .quick-grid { gap: 6px; }
+            .flip-card { width: 120px; height: 120px; }
+            .sidebar-col { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 640px) {
+            .hero-tile { padding: 48px 20px; }
+            .hero-tagline { font-size: 17px; }
+            .main-wrap { padding: 32px 20px; }
+            .stats-boxes { gap: 8px; padding: 16px; }
+        }
+
+        @media (max-width: 419px) {
+            .hero-tile h1 { font-size: 28px; }
+            .btn-pill, .btn-pill-ghost { font-size: 14px; padding: 10px 18px; }
+        }
+
+        /* ── 로그인 모달 ── */
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.96) translateY(8px); }
+            to   { opacity: 1; transform: none; }
+        }
+
+        .modal-backdrop {
+            position: fixed; inset: 0; z-index: 1000;
+            background: rgba(0,0,0,0.45);
+            backdrop-filter: blur(4px);
+            display: flex; align-items: center; justify-content: center;
+            padding: 24px;
+        }
+        .modal-box {
+            background: var(--canvas); border-radius: 18px;
+            padding: 32px 28px 28px; width: 100%; max-width: 360px;
+            position: relative; box-shadow: 0 24px 48px rgba(0,0,0,0.18);
+            animation: modalIn 0.2s ease;
+        }
+        .modal-close {
+            position: absolute; top: 14px; right: 14px;
+            background: none; border: none; cursor: pointer;
+            font-size: 15px; color: var(--ink-48);
+            width: 28px; height: 28px; display: flex;
+            align-items: center; justify-content: center;
+            border-radius: 50%; transition: background 0.15s;
+        }
+        .modal-close:hover { background: var(--parchment); }
+        .modal-tabs {
+            display: flex; gap: 3px; margin-bottom: 24px;
+            background: var(--parchment); padding: 4px; border-radius: 10px;
+        }
+        .modal-tab {
+            flex: 1; padding: 8px; border: none; background: none;
+            font-size: 13px; font-weight: 500; font-family: inherit;
+            color: var(--ink-muted); border-radius: 7px; cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+        }
+        .modal-tab.active {
+            background: var(--canvas); color: var(--ink); font-weight: 600;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        .modal-title { font-size: 21px; font-weight: 600; letter-spacing: -0.374px; margin-bottom: 4px; }
+        .modal-sub   { font-size: 13px; color: var(--ink-muted); margin-bottom: 20px; }
+        .modal-field { margin-bottom: 12px; }
+        .modal-input {
+            width: 100%; height: 44px; padding: 0 16px;
+            border: 1px solid var(--hairline); border-radius: 10px;
+            font-size: 15px; font-family: inherit; color: var(--ink);
+            background: var(--canvas); outline: none; transition: border-color 0.15s;
+        }
+        .modal-input:focus {
+            border-color: var(--blue);
+            outline: 2px solid rgba(0,102,204,0.15); outline-offset: 0;
+        }
+        .modal-btn {
+            width: 100%; height: 44px; margin-top: 4px;
+            background: var(--ink); color: #fff; border: none;
+            border-radius: 10px; font-size: 15px; font-weight: 600;
+            font-family: inherit; cursor: pointer;
+            transition: background 0.15s, transform 0.1s;
+        }
+        .modal-btn:hover   { background: #333; }
+        .modal-btn:active  { transform: scale(0.98); }
+        .modal-btn:disabled { background: #ccc; cursor: not-allowed; }
+        .modal-error {
+            display: none; margin-top: 12px; padding: 10px 14px;
+            font-size: 13px; color: #d93025;
+            background: #fff5f4; border: 1px solid #fecaca;
+            border-radius: 8px; text-align: center;
+        }
+        .modal-error.show { display: block; }
+        .modal-spin-wrap {
+            display: none; align-items: center; justify-content: center;
+            gap: 8px; margin-top: 12px; color: var(--ink-muted); font-size: 13px;
+        }
+        .modal-spin-wrap.show { display: flex; }
+        .m-spin {
+            width: 16px; height: 16px; flex-shrink: 0;
+            border: 2px solid var(--hairline); border-top-color: var(--blue);
+            border-radius: 50%; animation: spin 0.7s linear infinite;
+        }
+
+        /* ── 로그인 후 네비 ── */
+        .nav-user-name  { font-size: 12px; color: rgba(255,255,255,0.8); letter-spacing: -0.12px; }
+        .nav-admin-pill {
+            color: rgba(255,255,255,0.85) !important; font-size: 12px !important;
+            padding: 4px 12px !important; border-radius: 9999px !important;
+            background: rgba(255,255,255,0.12); text-decoration: none;
+            letter-spacing: -0.12px !important; transition: background 0.15s;
+        }
+        .nav-admin-pill:hover { background: rgba(255,255,255,0.22) !important; }
+        .nav-logout-btn {
+            font-size: 12px; color: rgba(255,255,255,0.65); background: none;
+            border: 1px solid rgba(255,255,255,0.2); padding: 4px 12px;
+            border-radius: 9999px; cursor: pointer; font-family: inherit;
+            transition: color 0.15s, border-color 0.15s;
+        }
+        .nav-logout-btn:hover { color: #fff; border-color: rgba(255,255,255,0.45); }
+    </style>
+</head>
 <body>
-<h1>의대관 웹사이트</h1>
-<p>로컬 개발 환경에서 수정한 페이지입니다.</p>
-</body></html>
+
+<!-- ── Global Nav ── -->
+<header>
+    <nav class="global-nav">
+        <div class="nav-inner">
+            <a href="#" class="nav-logo">
+                <img src="https://img.dshw.co.kr/resources/DESIGN/nimg/common/logo_campusm_202111.png"
+                     alt="대성기숙"
+                     onerror="this.style.display='none'">
+            </a>
+            <div class="nav-links">
+                <a href="#notice">공지사항</a>
+                <a href="#stats">통계 현황</a>
+                <a href="#weekly">주간공지</a>
+                <a href="#rules">학원규정</a>
+            </div>
+            <div class="nav-right" id="navRight">
+                <div id="navGuest">
+                    <a href="#" class="nav-pill" onclick="openLoginModal(event)">로그인</a>
+                </div>
+                <div id="navLoggedIn" style="display:none;align-items:center;gap:8px;">
+                    <span class="nav-user-name" id="navUserName"></span>
+                    <a href="?p=a" class="nav-admin-pill" id="navAdminLink" style="display:none">관리자</a>
+                    <button class="nav-logout-btn" onclick="doLogout()">로그아웃</button>
+                </div>
+            </div>
+            <button class="nav-toggle" onclick="toggleNav()" aria-label="메뉴">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+    </nav>
+    <div class="mobile-nav" id="mobileNav">
+        <a href="#notice" onclick="closeNav()">공지사항</a>
+        <a href="#stats" onclick="closeNav()">통계 현황</a>
+        <a href="#weekly" onclick="closeNav()">주간공지</a>
+        <a href="#rules" onclick="closeNav()">학원규정</a>
+        <a href="#" class="nav-pill" onclick="openLoginModal(event);closeNav()">로그인</a>
+    </div>
+</header>
+
+<!-- ── Hero Tile ── -->
+<section class="hero-tile" id="hero-vanta">
+    <div class="hero-quote-wrap">
+        <div class="hero-quote" id="heroQuote"></div>
+    </div>
+</section>
+
+<!-- ── Stats Strip ── -->
+<div class="stats-strip">
+    <div class="stats-strip-inner">
+        <div class="stat-cell">
+            <div class="stat-num">1,200</div>
+            <div class="stat-label">총 재원생</div>
+        </div>
+        <div class="stat-cell">
+            <div class="stat-num">12</div>
+            <div class="stat-label">개설 반</div>
+        </div>
+        <div class="stat-cell">
+            <div class="stat-num">매일</div>
+            <div class="stat-label">통계 갱신</div>
+        </div>
+        <div class="stat-cell">
+            <div class="stat-num">500</div>
+            <div class="stat-label">최대 동시 접속</div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Main ── -->
+<main>
+    <div class="main-wrap">
+
+        <!-- Content Column -->
+        <div class="content-col">
+
+            <!-- Quick Access -->
+            <div class="quick-grid">
+                <div class="flip-card">
+                    <div class="flip-card-inner">
+                        <div class="flip-card-front">
+                            <div class="qt-icon">📢</div>
+                            <div class="qt-name">공지사항</div>
+                        </div>
+                        <div class="flip-card-back">
+                            <div class="qt-back-desc">알림 · 행사 · 훈련</div>
+                            <a href="#notice" class="qt-back-link">바로가기 →</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="flip-card">
+                    <div class="flip-card-inner">
+                        <div class="flip-card-front">
+                            <div class="qt-icon">📊</div>
+                            <div class="qt-name">통계 현황</div>
+                        </div>
+                        <div class="flip-card-back">
+                            <div class="qt-back-desc">벌점 · 반별 통계</div>
+                            <a href="#stats" class="qt-back-link">바로가기 →</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="flip-card">
+                    <div class="flip-card-inner">
+                        <div class="flip-card-front">
+                            <div class="qt-icon">📅</div>
+                            <div class="qt-name">주간공지</div>
+                        </div>
+                        <div class="flip-card-back">
+                            <div class="qt-back-desc">주간 안내문 PDF</div>
+                            <a href="#weekly" class="qt-back-link">바로가기 →</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="flip-card">
+                    <div class="flip-card-inner">
+                        <div class="flip-card-front">
+                            <div class="qt-icon">📖</div>
+                            <div class="qt-name">학원규정</div>
+                        </div>
+                        <div class="flip-card-back">
+                            <div class="qt-back-desc">학원
+                                
+                                규정 조회</div>
+                            <a href="#rules" class="qt-back-link">바로가기 →</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notice -->
+            <div class="u-card" id="notice">
+                <div class="u-card-head">
+                    <span class="u-title">공지사항<span class="u-badge">최신순</span></span>
+                    <a href="#" class="u-more">전체보기</a>
+                </div>
+                <ul class="notice-list">
+                    <li><a href="#" class="n-row">
+                        <span class="n-badge n-pin">고정</span>
+                        <span class="n-title">2025년 상반기 일정 및 시험 안내</span>
+                        <span class="n-date">25.05.01</span>
+                    </a></li>
+                    <li><a href="#" class="n-row">
+                        <span class="n-badge n-pin">고정</span>
+                        <span class="n-title">생활관 규정 개정 사항 안내</span>
+                        <span class="n-date">25.04.15</span>
+                    </a></li>
+                    <li><a href="#" class="n-row">
+                        <span class="n-badge n-new">NEW</span>
+                        <span class="n-title">5월 4주차 자습실 이용 안내</span>
+                        <span class="n-date">25.05.27</span>
+                    </a></li>
+                    <li><a href="#" class="n-row">
+                        <span class="n-badge n-new">NEW</span>
+                        <span class="n-title">2025년 의학계열 모의고사 일정 공지</span>
+                        <span class="n-date">25.05.25</span>
+                    </a></li>
+                    <li><a href="#" class="n-row">
+                        <span class="n-badge n-gen">일반</span>
+                        <span class="n-title">화재 대피 훈련 실시 안내</span>
+                        <span class="n-date">25.05.20</span>
+                    </a></li>
+                    <li><a href="#" class="n-row">
+                        <span class="n-badge n-gen">일반</span>
+                        <span class="n-title">전체 청소 및 점검 일정 공지</span>
+                        <span class="n-date">25.05.18</span>
+                    </a></li>
+                </ul>
+            </div>
+
+            <!-- Weekly Notice -->
+            <div class="u-card" id="weekly">
+                <div class="u-card-head">
+                    <span class="u-title">주간공지<span class="u-badge">PDF</span></span>
+                    <a href="#" class="u-more">전체보기</a>
+                </div>
+                <ul class="weekly-list">
+                    <li><a href="#" class="w-row">
+                        <div class="w-num">22</div>
+                        <div class="w-info">
+                            <div class="w-title">2025년 5월 4주차 주간공지</div>
+                            <div class="w-meta">2025.05.26 · 조회 142</div>
+                        </div>
+                    </a></li>
+                    <li><a href="#" class="w-row">
+                        <div class="w-num">21</div>
+                        <div class="w-info">
+                            <div class="w-title">2025년 5월 3주차 주간공지</div>
+                            <div class="w-meta">2025.05.19 · 조회 318</div>
+                        </div>
+                    </a></li>
+                    <li><a href="#" class="w-row">
+                        <div class="w-num">20</div>
+                        <div class="w-info">
+                            <div class="w-title">2025년 5월 2주차 주간공지</div>
+                            <div class="w-meta">2025.05.12 · 조회 401</div>
+                        </div>
+                    </a></li>
+                    <li><a href="#" class="w-row">
+                        <div class="w-num">19</div>
+                        <div class="w-info">
+                            <div class="w-title">2025년 5월 1주차 주간공지</div>
+                            <div class="w-meta">2025.05.05 · 조회 489</div>
+                        </div>
+                    </a></li>
+                    <li><a href="#" class="w-row">
+                        <div class="w-num">18</div>
+                        <div class="w-info">
+                            <div class="w-title">2025년 4월 4주차 주간공지</div>
+                            <div class="w-meta">2025.04.28 · 조회 521</div>
+                        </div>
+                    </a></li>
+                </ul>
+            </div>
+
+            <!-- Stats Preview -->
+            <div class="u-card" id="stats">
+                <div class="u-card-head">
+                    <span class="u-title">통계 현황<span class="u-badge">전체 공개</span></span>
+                    <a href="#" class="u-more">상세보기</a>
+                </div>
+                <div class="stats-boxes">
+                    <div class="stats-box">
+                        <div class="sb-num">—</div>
+                        <div class="sb-label">전체 평균</div>
+                        <div class="sb-sub">벌점 현황</div>
+                    </div>
+                    <div class="stats-box">
+                        <div class="sb-num">—</div>
+                        <div class="sb-label">남학생</div>
+                        <div class="sb-sub">그룹별 통계</div>
+                    </div>
+                    <div class="stats-box">
+                        <div class="sb-num">—</div>
+                        <div class="sb-label">여학생</div>
+                        <div class="sb-sub">그룹별 통계</div>
+                    </div>
+                </div>
+                <p class="stats-note">통계는 하루 1회 갱신됩니다. 로그인 시 개인 통계를 확인할 수 있습니다.</p>
+            </div>
+
+        </div>
+
+        <!-- Sidebar Column -->
+        <aside class="sidebar-col">
+
+            <!-- Search -->
+            <div class="u-card" id="search" style="height:140px;">
+                <div class="u-card-head">
+                    <span class="u-title">검 색</span>
+                </div>
+                <div class="search-wrap">
+                    <div class="search-row">
+                        <input type="text" class="search-field" placeholder="제목, 내용 검색...">
+                        <button class="search-go">→</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rules Preview -->
+            <div class="u-card" id="rules">
+                <div class="u-card-head">
+                    <span class="u-title">학원규정</span>
+                    <a href="#" class="u-more">전체보기</a>
+                </div>
+                <div class="rules-wrap">
+                    <div class="rule-cat">생활 규정</div>
+                    <div class="rule-ln"><span>소등 후 이동</span><span class="rule-pt">-2점</span></div>
+                    <div class="rule-ln"><span>소지품 규정 위반</span><span class="rule-pt">-3점</span></div>
+                    <div class="rule-ln"><span>정해진 장소 외 취식</span><span class="rule-pt">-1점</span></div>
+                    <div class="rule-cat">학습 규정</div>
+                    <div class="rule-ln"><span>수업 지각</span><span class="rule-pt">-1점</span></div>
+                    <div class="rule-ln"><span>수업 결석</span><span class="rule-pt">-5점</span></div>
+                    <div class="rule-ln"><span>자습 중 타인 방해</span><span class="rule-pt">-3점</span></div>
+                    <div style="text-align:center;padding:12px 0 4px;">
+                        <a href="#" style="font-size:14px;color:var(--blue);letter-spacing:-0.224px;text-decoration:none;">전체 규정 확인하기</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Summary -->
+            <div class="u-card">
+                <div class="u-card-head">
+                    <span class="u-title">반별 벌점 현황</span>
+                    <a href="#stats" class="u-more">상세</a>
+                </div>
+                <div class="s-row"><span class="s-row-lbl">A반</span><span class="s-row-val">— 점</span></div>
+                <div class="s-row"><span class="s-row-lbl">B반</span><span class="s-row-val">— 점</span></div>
+                <div class="s-row"><span class="s-row-lbl">C반</span><span class="s-row-val">— 점</span></div>
+                <div class="s-row"><span style="font-size:11px;color:var(--ink-48);">통계 연동 후 표시됩니다</span></div>
+            </div>
+
+        </aside>
+    </div>
+</main>
+
+<!-- ── 로그인 모달 ── -->
+<div id="loginModal" class="modal-backdrop" style="display:none" onclick="handleModalBackdrop(event)">
+    <div class="modal-box">
+        <button class="modal-close" onclick="closeLoginModal()">✕</button>
+
+        <div class="modal-tabs">
+            <button class="modal-tab active" id="tabGeneral" onclick="switchLoginTab('general')">학생 로그인</button>
+            <button class="modal-tab"        id="tabAdmin"   onclick="switchLoginTab('admin')">관리자</button>
+        </div>
+
+        <!-- 학생 로그인 -->
+        <div id="formGeneral">
+            <div class="modal-title">학생 로그인</div>
+            <div class="modal-sub">학번과 이름을 입력하세요</div>
+            <div class="modal-field">
+                <input type="text" id="genId"   class="modal-input" placeholder="학번 (예: 2501)" maxlength="10">
+            </div>
+            <div class="modal-field">
+                <input type="text" id="genName" class="modal-input" placeholder="이름" maxlength="20">
+            </div>
+            <button class="modal-btn" id="btnGenLogin" onclick="doStudentLogin()">로그인</button>
+        </div>
+
+        <!-- 관리자 로그인 -->
+        <div id="formAdmin" style="display:none">
+            <div class="modal-title">관리자 로그인</div>
+            <div class="modal-sub">관리자 ID와 비밀번호를 입력하세요</div>
+            <div class="modal-field">
+                <input type="text"     id="admId" class="modal-input" placeholder="관리자 ID"  maxlength="50" autocomplete="username">
+            </div>
+            <div class="modal-field">
+                <input type="password" id="admPw" class="modal-input" placeholder="비밀번호" maxlength="100" autocomplete="current-password">
+            </div>
+            <button class="modal-btn" id="btnAdmLogin" onclick="doAdminLogin()">로그인</button>
+        </div>
+
+        <div class="modal-error"    id="modalError"></div>
+        <div class="modal-spin-wrap" id="modalSpinner">
+            <div class="m-spin"></div><span>확인 중...</span>
+        </div>
+    </div>
+</div>
+
+<!-- ── Footer ── -->
+<footer>
+    <div class="footer-inner">
+    </div>
+</footer>
+
+<script>
+// ─────────────────────────────────────────────
+// 로그인 모달
+// ─────────────────────────────────────────────
+var _loginTab = 'general';
+
+function openLoginModal(e) {
+    if (e) e.preventDefault();
+    document.getElementById('loginModal').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    clearModalState();
+}
+function closeLoginModal() {
+    document.getElementById('loginModal').style.display = 'none';
+    document.body.style.overflow = '';
+}
+function handleModalBackdrop(e) {
+    if (e.target === document.getElementById('loginModal')) closeLoginModal();
+}
+function switchLoginTab(tab) {
+    _loginTab = tab;
+    document.getElementById('formGeneral').style.display = tab === 'general' ? 'block' : 'none';
+    document.getElementById('formAdmin').style.display   = tab === 'admin'   ? 'block' : 'none';
+    document.getElementById('tabGeneral').className = 'modal-tab' + (tab === 'general' ? ' active' : '');
+    document.getElementById('tabAdmin').className   = 'modal-tab' + (tab === 'admin'   ? ' active' : '');
+    clearModalState();
+}
+function clearModalState() {
+    document.getElementById('modalError').className = 'modal-error';
+    document.getElementById('modalSpinner').className = 'modal-spin-wrap';
+}
+function showModalError(msg) {
+    document.getElementById('modalError').textContent = msg;
+    document.getElementById('modalError').className = 'modal-error show';
+    document.getElementById('modalSpinner').className = 'modal-spin-wrap';
+}
+function setModalLoading(on, btnId) {
+    document.getElementById('modalSpinner').className = on ? 'modal-spin-wrap show' : 'modal-spin-wrap';
+    document.getElementById(btnId).disabled = on;
+    if (on) document.getElementById('modalError').className = 'modal-error';
+}
+
+// GAS 환경 확인
+function gasAvailable() {
+    if (typeof google === 'undefined' || !google.script || !google.script.run) {
+        showModalError('GAS 웹앱 URL로 접속하세요. 로컬 파일 직접 열기는 작동하지 않습니다.');
+        return false;
+    }
+    return true;
+}
+
+// ─────────────────────────────────────────────
+// 학생 로그인 (학번 + 이름 → user_master 확인)
+// ─────────────────────────────────────────────
+function doStudentLogin() {
+    var sid  = document.getElementById('genId').value.trim();
+    var name = document.getElementById('genName').value.trim();
+    if (!sid || !name) { showModalError('학번과 이름을 입력하세요'); return; }
+    if (!gasAvailable()) return;
+
+    setModalLoading(true, 'btnGenLogin');
+    google.script.run
+        .withSuccessHandler(function(r) {
+            setModalLoading(false, 'btnGenLogin');
+            if (!r || !r.success) { showModalError(r ? r.message : '서버 오류'); return; }
+            sessionStorage.setItem('std_token', r.token);
+            sessionStorage.setItem('std_name',  r.name);
+            sessionStorage.setItem('std_ban',   r.ban  || '');
+            sessionStorage.setItem('std_prt',   r.prt  || '');
+            updateNavLoggedIn(r.name + '님', false);
+            closeLoginModal();
+        })
+        .withFailureHandler(function(e) {
+            setModalLoading(false, 'btnGenLogin');
+            showModalError('서버 오류: ' + (e && e.message || '알 수 없는 오류'));
+        })
+        .studentLogin(sid, name);
+}
+
+// ─────────────────────────────────────────────
+// 관리자 로그인 → 성공 시 네비에 '관리자' 표시
+// ─────────────────────────────────────────────
+function doAdminLogin() {
+    var id = document.getElementById('admId').value.trim();
+    var pw = document.getElementById('admPw').value;
+    if (!id || !pw) { showModalError('아이디와 비밀번호를 입력하세요'); return; }
+    if (!gasAvailable()) return;
+
+    setModalLoading(true, 'btnAdmLogin');
+    google.script.run
+        .withSuccessHandler(function(r) {
+            setModalLoading(false, 'btnAdmLogin');
+            if (!r || !r.success) {
+                showModalError(r ? r.message : '서버 오류');
+                document.getElementById('admPw').value = '';
+                return;
+            }
+            sessionStorage.setItem('adm_token', r.token);
+            sessionStorage.setItem('adm_name',  r.name);
+            sessionStorage.setItem('adm_super', r.isSuperAdmin ? '1' : '0');
+            updateNavLoggedIn(r.name + '님', true);
+            closeLoginModal();
+        })
+        .withFailureHandler(function(e) {
+            setModalLoading(false, 'btnAdmLogin');
+            showModalError('서버 오류: ' + (e && e.message || '알 수 없는 오류'));
+            document.getElementById('admPw').value = '';
+        })
+        .adminLogin(id, pw);
+}
+
+// ─────────────────────────────────────────────
+// 로그아웃
+// ─────────────────────────────────────────────
+function doLogout() {
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+        var stdToken = sessionStorage.getItem('std_token');
+        var admToken = sessionStorage.getItem('adm_token');
+        if (stdToken) google.script.run.studentLogout(stdToken);
+        if (admToken) google.script.run.adminLogout(admToken);
+    }
+    sessionStorage.clear();
+    updateNavGuest();
+}
+
+// ─────────────────────────────────────────────
+// 네비 상태
+// ─────────────────────────────────────────────
+function updateNavLoggedIn(displayName, isAdmin) {
+    document.getElementById('navGuest').style.display = 'none';
+    var el = document.getElementById('navLoggedIn');
+    el.style.display = 'flex';
+    document.getElementById('navUserName').textContent = displayName;
+    document.getElementById('navAdminLink').style.display = isAdmin ? 'inline' : 'none';
+}
+function updateNavGuest() {
+    document.getElementById('navLoggedIn').style.display = 'none';
+    document.getElementById('navGuest').style.display = 'block';
+}
+
+// 페이지 로드 시 세션 복원 (관리자 우선)
+(function() {
+    var admName = sessionStorage.getItem('adm_name');
+    var stdName = sessionStorage.getItem('std_name');
+    if (admName)      updateNavLoggedIn(admName + '님', true);
+    else if (stdName) updateNavLoggedIn(stdName + '님', false);
+})();
+
+// Enter 키
+document.addEventListener('keydown', function(e) {
+    if (e.key !== 'Enter') return;
+    var modal = document.getElementById('loginModal');
+    if (!modal || modal.style.display === 'none') return;
+    if (_loginTab === 'general') doStudentLogin();
+    else doAdminLogin();
+});
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vanta@0.5.24/dist/vanta.birds.min.js"></script>
+<script>
+VANTA.BIRDS({
+  el: "#hero-vanta",
+  mouseControls: true,
+  touchControls: true,
+  gyroControls: false,
+  minHeight: 100.00,
+  minWidth: 200.00,
+  scale: 1.00,
+  scaleMobile: 1.00,
+  backgroundColor: 0x00447f,
+  color1: 0xfc2111,
+  color2: 0xf8f801,
+  colorMode: "lerp",
+  birdSize: 1.2,
+  wingSpan: 22,
+  speedLimit: 4,
+  separation: 60,
+  alignment: 50,
+  cohesion: 50,
+  quantity: 4
+});
+</script>
+<script>
+    const _quotes = [
+        "천천히 가도 괜찮아,\n멈추지만 않으면...",
+        "모르는 게 부끄러운 게 아냐,\n안 보는 게 부끄러운 거지",
+        "비교는 남과 하지 말고,\n어제의 나랑 해",
+        "딱 한 페이지만 더,\n그게 쌓이면 산이 돼",
+        "잠깐 쉬어도 괜찮아,\n속도보다 완주가 중요하니까",
+        "남들이 몇 문제 풀었는지 말고,\n오늘 내가 얼마나 이해했는지가 중요해"
+    ];
+    const _idx = parseInt(localStorage.getItem('quoteIdx') || '0');
+    document.getElementById('heroQuote').innerHTML = _quotes[_idx].replace(/\n/g, '<br>');
+    localStorage.setItem('quoteIdx', (_idx + 1) % _quotes.length);
+
+    // 터치 기기 플립 카드 동작
+    (function() {
+        if (!window.matchMedia('(pointer: coarse)').matches) return;
+        document.querySelectorAll('.flip-card').forEach(function(card) {
+            var flipped = false;
+            var timer = null;
+            var inner = card.querySelector('.flip-card-inner');
+
+            card.addEventListener('click', function(e) {
+                if (!flipped) {
+                    // 첫 탭: 뒤집기
+                    flipped = true;
+                    inner.style.transform = 'rotateY(180deg)';
+                    timer = setTimeout(function() {
+                        inner.style.transform = 'rotateY(0deg)';
+                        flipped = false;
+                    }, 10000);
+                    e.preventDefault();
+                } else {
+    
+                    clearTimeout(timer);
+                    if (e.target.closest('.qt-back-link')) {
+                        // 링크 탭: 이동 허용, 잠시 후 복귀
+                        flipped = false;
+                        setTimeout(function() {
+                            inner.style.transform = 'rotateY(0deg)';
+                        }, 400);
+                    } else {
+                        // 링크 외 탭: 앞면 복귀
+                        inner.style.transform = 'rotateY(0deg)';
+                        flipped = false;
+                        e.preventDefault();
+                    }
+                }
+            });
+        });
+    })();
+
+    function toggleNav() {
+        const nav = document.getElementById('mobileNav');
+        nav.style.display = nav.style.display === 'flex' ? 'none' : 'flex';
+    }
+
+    function closeNav() {
+        document.getElementById('mobileNav').style.display = 'none';
+    }
+</script>
+
+</body>
+</html>
