@@ -491,26 +491,26 @@ async function callRpc(func, params) {
 }
 
 // ─────────────────────────────────────────────
-// 세션 관리 (sessionStorage — index.html과 공유)
+// 세션 관리 (localStorage — 창 간 공유)
 // ─────────────────────────────────────────────
 const SESSION_KEY = 'adm_id';
 const SESSION_NAME = 'adm_name';
 const SESSION_SUPER = 'adm_super';
 
-function getAdminId()    { return sessionStorage.getItem(SESSION_KEY); }
-function getAdminName()  { return sessionStorage.getItem(SESSION_NAME); }
-function isSuperAdmin()  { return sessionStorage.getItem(SESSION_SUPER) === '1'; }
+function getAdminId()    { return localStorage.getItem(SESSION_KEY); }
+function getAdminName()  { return localStorage.getItem(SESSION_NAME); }
+function isSuperAdmin()  { return localStorage.getItem(SESSION_SUPER) === '1'; }
 
 function saveSession(adminId, name, isSuper) {
-  sessionStorage.setItem(SESSION_KEY,   adminId);
-  sessionStorage.setItem(SESSION_NAME,  name);
-  sessionStorage.setItem(SESSION_SUPER, isSuper ? '1' : '0');
+  localStorage.setItem(SESSION_KEY,   adminId);
+  localStorage.setItem(SESSION_NAME,  name);
+  localStorage.setItem(SESSION_SUPER, isSuper ? '1' : '0');
 }
 
 function clearSession() {
-  sessionStorage.removeItem(SESSION_KEY);
-  sessionStorage.removeItem(SESSION_NAME);
-  sessionStorage.removeItem(SESSION_SUPER);
+  localStorage.removeItem(SESSION_KEY);
+  localStorage.removeItem(SESSION_NAME);
+  localStorage.removeItem(SESSION_SUPER);
 }
 
 // ─────────────────────────────────────────────
@@ -574,7 +574,7 @@ document.addEventListener('keydown', function(e) {
 function doLogout() {
   if (!confirm('로그아웃 하시겠습니까?')) return;
   clearSession();
-  showLoginView();
+  window.close();
 }
 
 // ─────────────────────────────────────────────
