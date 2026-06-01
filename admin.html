@@ -347,6 +347,52 @@
 
     .empty-row td { padding: 28px 20px; text-align: center; color: var(--ink-muted); }
 
+    /* ── 공지 관리 ── */
+    .notice-mgmt-scroll {
+      max-height: 480px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--hairline) transparent;
+    }
+    .notice-mgmt-scroll::-webkit-scrollbar { width: 4px; }
+    .notice-mgmt-scroll::-webkit-scrollbar-thumb { background: var(--hairline); border-radius: 2px; }
+    .btn-icon {
+      background: none; border: none; cursor: pointer;
+      font-size: 14px; padding: 2px 5px; border-radius: 4px; transition: background 0.15s;
+    }
+    .btn-icon:hover { background: var(--parchment); }
+    .btn-add {
+      font-size: 12px; font-weight: 600; font-family: inherit;
+      background: var(--blue); color: #fff; border: none;
+      padding: 5px 14px; border-radius: 9999px; cursor: pointer; transition: background 0.15s;
+    }
+    .btn-add:hover { background: var(--blue-f); }
+
+    /* ── 편집 모달 ── */
+    .edit-modal-backdrop {
+      position: fixed; inset: 0; z-index: 1000;
+      background: rgba(0,0,0,0.45); backdrop-filter: blur(3px);
+      display: flex; align-items: center; justify-content: center; padding: 24px;
+    }
+    .edit-modal-box {
+      background: var(--canvas); border-radius: 14px;
+      padding: 28px 24px; width: 100%; max-width: 520px;
+      max-height: 90vh; overflow-y: auto;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+    }
+    .edit-label { display: block; font-size: 12px; font-weight: 600; color: var(--ink-muted); margin-bottom: 5px; margin-top: 14px; }
+    .edit-input { width: 100%; padding: 9px 12px; border: 1px solid var(--hairline); border-radius: 8px; font-size: 14px; font-family: inherit; color: var(--ink); background: var(--canvas); outline: none; transition: border-color 0.15s; }
+    .edit-input:focus { border-color: var(--blue); }
+    .edit-textarea { height: 140px; resize: vertical; }
+    .edit-checks { display: flex; gap: 20px; margin-top: 14px; font-size: 13px; }
+    .edit-checks label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+    .edit-actions { display: flex; gap: 8px; margin-top: 18px; }
+    .btn-save { flex: 1; height: 40px; background: var(--ink); color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer; }
+    .btn-save:hover { background: #333; }
+    .btn-cancel { flex: 1; height: 40px; background: none; color: var(--ink-muted); border: 1px solid var(--hairline); border-radius: 8px; font-size: 14px; font-family: inherit; cursor: pointer; }
+    .edit-error { display: none; font-size: 12px; color: var(--danger); margin-top: 8px; text-align: center; }
+    .edit-error.show { display: block; }
+
     /* ── 반응형 ── */
     @media (max-width: 480px) {
       .login-box { padding: 28px 20px; }
@@ -425,29 +471,31 @@
         <div class="sc-label">오늘 등록 공지</div>
         <div class="sc-sub">건</div>
       </div>
-      <div class="stat-card">
-        <div class="sc-num" id="statRecent">—</div>
-        <div class="sc-label">최근 공지 조회</div>
-        <div class="sc-sub">건 (최대 5)</div>
-      </div>
     </div>
 
-    <!-- 공지사항 -->
+    <!-- 공지사항 CRUD -->
     <div class="card">
       <div class="card-head">
         <span class="card-title">공지사항</span>
-        <a href="#" class="card-link">전체보기</a>
+        <button class="btn-add" onclick="openNoticeEdit(0)">+ 등록</button>
       </div>
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>ID</th><th>제목</th><th>등록일</th><th>조회수</th><th>게시</th>
-          </tr>
-        </thead>
-        <tbody id="noticeTbody">
-          <tr class="empty-row"><td colspan="5">로딩 중...</td></tr>
-        </tbody>
-      </table>
+      <div class="notice-mgmt-scroll">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width:36px">고정</th>
+              <th>제목</th>
+              <th style="width:90px">등록일</th>
+              <th style="width:52px">조회</th>
+              <th style="width:52px">게시</th>
+              <th style="width:68px">관리</th>
+            </tr>
+          </thead>
+          <tbody id="noticeTbody">
+            <tr class="empty-row"><td colspan="6">로딩 중...</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
     <!-- 슈퍼관리자 전용 -->
@@ -465,6 +513,35 @@
       </div>
     </div>
 
+  </div>
+</div>
+
+<!-- ── 공지 편집 모달 ── -->
+<div id="noticeEditModal" class="edit-modal-backdrop" style="display:none" onclick="handleEditBackdrop(event)">
+  <div class="edit-modal-box">
+    <div style="font-size:17px;font-weight:600;margin-bottom:4px;" id="editModalTitle">공지 등록</div>
+    <input type="hidden" id="editId" value="0">
+
+    <label class="edit-label">제목</label>
+    <input id="editTitle" type="text" class="edit-input" placeholder="제목 입력" maxlength="200">
+
+    <label class="edit-label">내용</label>
+    <textarea id="editBody" class="edit-input edit-textarea" placeholder="내용 입력"></textarea>
+
+    <label class="edit-label">작성자</label>
+    <input id="editOwner" type="text" class="edit-input" placeholder="작성자 이름" maxlength="50">
+
+    <div class="edit-checks">
+      <label><input type="checkbox" id="editPin"> 고정</label>
+      <label><input type="checkbox" id="editHidden"> 비공개</label>
+    </div>
+
+    <div class="edit-actions">
+      <button class="btn-save"   onclick="saveNotice()">저장</button>
+      <button class="btn-cancel" onclick="closeNoticeEdit()">취소</button>
+    </div>
+    <div class="edit-error" id="editError"></div>
+    <div class="spinner-wrap" id="editSpinner"><div class="spinner"></div><span>저장 중...</span></div>
   </div>
 </div>
 
@@ -488,6 +565,132 @@ async function callRpc(func, params) {
     });
     return res.ok ? await res.json() : null;
   } catch(e) { return null; }
+}
+
+// ─────────────────────────────────────────────
+// 공지사항 CRUD
+// ─────────────────────────────────────────────
+var _adminNotices = [];
+
+async function loadAdminNotices() {
+  var adminId = getAdminId();
+  if (!adminId) return;
+  var list = await callRpc('get_notices_admin', { p_admin_id: adminId });
+  if (!Array.isArray(list)) return;
+  _adminNotices = list;
+  renderAdminNoticeTable(list);
+}
+
+function renderAdminNoticeTable(list) {
+  var tbody = document.getElementById('noticeTbody');
+  if (!list.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="6">공지사항이 없습니다</td></tr>';
+    return;
+  }
+  tbody.innerHTML = list.slice(0,10).map(function(r) {
+    var date = r.textnotice_date ? r.textnotice_date.substring(0,10) : '—';
+    var pinBtn  = r.textnotice_pin
+      ? '<button class="btn-icon" title="고정 해제" onclick="toggleNoticePin(' + r.textnotice_id + ',true)">📌</button>'
+      : '<button class="btn-icon" title="고정"      onclick="toggleNoticePin(' + r.textnotice_id + ',false)">📍</button>';
+    var pubBtn  = r.textnotice_hidden
+      ? '<button class="btn-icon" title="게시"  onclick="toggleNoticeHidden(' + r.textnotice_id + ',true)">🔒</button>'
+      : '<button class="btn-icon" title="비공개" onclick="toggleNoticeHidden(' + r.textnotice_id + ',false)">✅</button>';
+    return '<tr>'
+      + '<td style="text-align:center">' + pinBtn + '</td>'
+      + '<td style="cursor:pointer" onclick="openNoticeEdit(' + r.textnotice_id + ')">'
+        + esc(r.textnotice_title || '') + '</td>'
+      + '<td class="td-muted">' + date + '</td>'
+      + '<td>' + (r.textnotice_readcnt || 0) + '</td>'
+      + '<td style="text-align:center">' + pubBtn + '</td>'
+      + '<td><button class="btn-icon" onclick="deleteNotice(' + r.textnotice_id + ')">🗑️</button></td>'
+      + '</tr>';
+  }).join('');
+}
+
+// 공지 편집 모달 열기 (id=0 이면 신규)
+function openNoticeEdit(id) {
+  var r = id ? _adminNotices.find(function(x) { return x.textnotice_id === id; }) : null;
+  document.getElementById('editModalTitle').textContent = r ? '공지 수정' : '공지 등록';
+  document.getElementById('editId').value    = r ? r.textnotice_id : 0;
+  document.getElementById('editTitle').value = r ? (r.textnotice_title  || '') : '';
+  document.getElementById('editBody').value  = r ? (r.textnotice_body   || '') : '';
+  document.getElementById('editOwner').value = r ? (r.textnotice_owner  || '') : '';
+  document.getElementById('editPin').checked    = r ? !!r.textnotice_pin    : false;
+  document.getElementById('editHidden').checked = r ? !!r.textnotice_hidden : false;
+  document.getElementById('editError').className = 'edit-error';
+  document.getElementById('editSpinner').className = 'spinner-wrap';
+  document.getElementById('noticeEditModal').style.display = 'flex';
+}
+
+function closeNoticeEdit() {
+  document.getElementById('noticeEditModal').style.display = 'none';
+}
+
+function handleEditBackdrop(e) {
+  if (e.target === document.getElementById('noticeEditModal')) closeNoticeEdit();
+}
+
+async function saveNotice() {
+  var id     = parseInt(document.getElementById('editId').value) || 0;
+  var title  = document.getElementById('editTitle').value.trim();
+  var body   = document.getElementById('editBody').value.trim();
+  var owner  = document.getElementById('editOwner').value.trim();
+  var pin    = document.getElementById('editPin').checked;
+  var hidden = document.getElementById('editHidden').checked;
+
+  if (!title) { showEditError('제목을 입력하세요'); return; }
+
+  var sp = document.getElementById('editSpinner');
+  sp.className = 'spinner-wrap show';
+
+  var r = await callRpc('save_notice', {
+    p_admin_id: getAdminId(), p_id: id,
+    p_title: title, p_body: body, p_owner: owner,
+    p_hidden: hidden, p_pin: pin
+  });
+
+  sp.className = 'spinner-wrap';
+  if (!r || !r.success) { showEditError('저장 실패: ' + (r && r.error || '서버 오류')); return; }
+  closeNoticeEdit();
+  loadAdminNotices();
+}
+
+async function deleteNotice(id) {
+  if (!confirm('삭제하시겠습니까?')) return;
+  var r = await callRpc('delete_notice', { p_admin_id: getAdminId(), p_id: id });
+  if (r && r.success) loadAdminNotices();
+  else alert('삭제 실패');
+}
+
+async function toggleNoticePin(id, currentPin) {
+  var n = _adminNotices.find(function(x) { return x.textnotice_id === id; });
+  if (!n) return;
+  await callRpc('save_notice', {
+    p_admin_id: getAdminId(), p_id: id,
+    p_title: n.textnotice_title, p_body: n.textnotice_body || '',
+    p_owner: n.textnotice_owner || '', p_hidden: n.textnotice_hidden, p_pin: !currentPin
+  });
+  loadAdminNotices();
+}
+
+async function toggleNoticeHidden(id, currentHidden) {
+  var n = _adminNotices.find(function(x) { return x.textnotice_id === id; });
+  if (!n) return;
+  await callRpc('save_notice', {
+    p_admin_id: getAdminId(), p_id: id,
+    p_title: n.textnotice_title, p_body: n.textnotice_body || '',
+    p_owner: n.textnotice_owner || '', p_hidden: !currentHidden, p_pin: n.textnotice_pin
+  });
+  loadAdminNotices();
+}
+
+function showEditError(msg) {
+  var el = document.getElementById('editError');
+  el.textContent = msg; el.className = 'edit-error show';
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 // ─────────────────────────────────────────────
@@ -550,6 +753,7 @@ window.addEventListener('load', async function() {
   if (data && data.error === 'UNAUTHORIZED') { clearSession(); return; }
   if (!data) return; // 네트워크 오류 — 로그인 폼으로 (세션 유지)
   renderDashboard(data);
+  loadAdminNotices();
   startIdleTimer();
 });
 
@@ -618,10 +822,6 @@ function renderDashboard(data) {
     d.getFullYear() + '.' + String(d.getMonth()+1).padStart(2,'0') + '.' + String(d.getDate()).padStart(2,'0') + ' 기준';
 
   document.getElementById('statToday').textContent  = data.today_count  ?? 0;
-  document.getElementById('statRecent').textContent = (data.notices || []).length;
-
-  renderNotices(data.notices || []);
-
   if (superAdmin && data.admin_logins) {
     document.getElementById('superSection').style.display = 'block';
     renderAdminLogins(data.admin_logins);

@@ -772,6 +772,32 @@
             .btn-pill, .btn-pill-ghost { font-size: 14px; padding: 10px 18px; }
         }
 
+        /* ── 공지 스크롤 영역 ── */
+        .notice-scroll {
+            max-height: 141px; /* 3행 */
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: var(--hairline) transparent;
+        }
+        .notice-scroll::-webkit-scrollbar { width: 4px; }
+        .notice-scroll::-webkit-scrollbar-thumb { background: var(--hairline); border-radius: 2px; }
+
+        /* ── 공지 상세 모달 ── */
+        .notice-modal-body {
+            overflow-y: auto;
+            flex: 1;
+            font-size: 14px;
+            line-height: 1.7;
+            color: var(--ink);
+            white-space: pre-wrap;
+            padding: 4px 0;
+        }
+        .notice-modal-meta {
+            font-size: 12px;
+            color: var(--ink-muted);
+            margin: 6px 0 16px;
+        }
+
         /* ── 로그인 모달 ── */
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes modalIn {
@@ -1009,41 +1035,15 @@
             <!-- Notice -->
             <div class="u-card" id="notice">
                 <div class="u-card-head">
-                    <span class="u-title">공지사항<span class="u-badge">최신순</span></span>
-                    <a href="#" class="u-more">전체보기</a>
+                    <span class="u-title">공지사항</span>
                 </div>
-                <ul class="notice-list">
-                    <li><a href="#" class="n-row">
-                        <span class="n-badge n-pin">고정</span>
-                        <span class="n-title">2025년 상반기 일정 및 시험 안내</span>
-                        <span class="n-date">25.05.01</span>
-                    </a></li>
-                    <li><a href="#" class="n-row">
-                        <span class="n-badge n-pin">고정</span>
-                        <span class="n-title">생활관 규정 개정 사항 안내</span>
-                        <span class="n-date">25.04.15</span>
-                    </a></li>
-                    <li><a href="#" class="n-row">
-                        <span class="n-badge n-new">NEW</span>
-                        <span class="n-title">5월 4주차 자습실 이용 안내</span>
-                        <span class="n-date">25.05.27</span>
-                    </a></li>
-                    <li><a href="#" class="n-row">
-                        <span class="n-badge n-new">NEW</span>
-                        <span class="n-title">2025년 의학계열 모의고사 일정 공지</span>
-                        <span class="n-date">25.05.25</span>
-                    </a></li>
-                    <li><a href="#" class="n-row">
-                        <span class="n-badge n-gen">일반</span>
-                        <span class="n-title">화재 대피 훈련 실시 안내</span>
-                        <span class="n-date">25.05.20</span>
-                    </a></li>
-                    <li><a href="#" class="n-row">
-                        <span class="n-badge n-gen">일반</span>
-                        <span class="n-title">전체 청소 및 점검 일정 공지</span>
-                        <span class="n-date">25.05.18</span>
-                    </a></li>
-                </ul>
+                <!-- 고정 공지 (항상 노출) -->
+                <ul class="notice-list" id="noticePinList"></ul>
+                <!-- 일반 공지 (스크롤, 3행) -->
+                <ul class="notice-list notice-scroll" id="noticeScrollList"></ul>
+                <div id="noticeEmpty" style="display:none;padding:20px 24px;text-align:center;color:var(--ink-muted);font-size:13px;">
+                    공지사항이 없습니다
+                </div>
             </div>
 
             <!-- Weekly Notice -->
@@ -1171,6 +1171,17 @@
         </aside>
     </div>
 </main>
+
+<!-- ── 공지 상세 모달 ── -->
+<div id="noticeDetailModal" class="modal-backdrop" style="display:none" onclick="closeNoticeDetail()">
+    <div class="modal-box" onclick="event.stopPropagation()"
+         style="max-width:600px;max-height:80vh;display:flex;flex-direction:column;">
+        <button class="modal-close" onclick="closeNoticeDetail()">✕</button>
+        <div id="ndTitle" class="modal-title" style="font-size:17px;line-height:1.4;padding-right:24px;"></div>
+        <div id="ndMeta"  class="notice-modal-meta"></div>
+        <div id="ndBody"  class="notice-modal-body"></div>
+    </div>
+</div>
 
 <!-- ── 로그인 모달 ── -->
 <div id="loginModal" class="modal-backdrop" style="display:none" onclick="handleModalBackdrop(event)">
@@ -1373,6 +1384,83 @@ document.addEventListener('keydown', function(e) {
     e.preventDefault();
     if (_loginTab === 'general') doStudentLogin(); else doAdminLogin();
 });
+</script>
+<script>
+// ─────────────────────────────────────────────
+// 공지사항 DB 연동
+// ─────────────────────────────────────────────
+var _notices = [];
+
+async function loadNotices() {
+    var list = await callRpc('get_notices_public', {});
+    if (!Array.isArray(list)) return;
+    _notices = list;
+
+    var pinned = list.filter(function(r) { return r.textnotice_pin; });
+    var normal = list.filter(function(r) { return !r.textnotice_pin; });
+
+    renderNoticeRows(document.getElementById('noticePinList'),   pinned);
+    renderNoticeRows(document.getElementById('noticeScrollList'), normal);
+
+    document.getElementById('noticeEmpty').style.display =
+        (pinned.length + normal.length === 0) ? 'block' : 'none';
+
+    // 이벤트 위임 (중복 등록 방지)
+    var p = document.getElementById('noticePinList');
+    var s = document.getElementById('noticeScrollList');
+    p.onclick = handleNoticeClick;
+    s.onclick = handleNoticeClick;
+}
+
+function renderNoticeRows(ul, rows) {
+    if (!rows.length) { ul.innerHTML = ''; return; }
+    ul.innerHTML = rows.map(function(r) {
+        var d = r.textnotice_date ? r.textnotice_date.substring(2,10).replace(/-/g,'.') : '';
+        var badge = r.textnotice_pin
+            ? '<span class="n-badge n-pin">고정</span>'
+            : '<span class="n-badge n-gen">일반</span>';
+        return '<li><a href="#" class="n-row" data-id="' + r.textnotice_id + '">' +
+               badge + '<span class="n-title">' + esc(r.textnotice_title||'') + '</span>' +
+               '<span class="n-date">' + d + '</span></a></li>';
+    }).join('');
+}
+
+function handleNoticeClick(e) {
+    e.preventDefault();
+    var row = e.target.closest('.n-row');
+    if (!row) return;
+    var id = parseInt(row.dataset.id);
+    var n = _notices.find(function(x) { return x.textnotice_id === id; });
+    if (!n) return;
+    openNoticeDetail(id, n.textnotice_title, n.textnotice_body,
+                     n.textnotice_date, n.textnotice_owner);
+}
+
+function openNoticeDetail(id, title, body, date, owner) {
+    document.getElementById('ndTitle').textContent = title || '';
+    document.getElementById('ndMeta').textContent =
+        (date ? date.substring(0,10) : '') + (owner ? '  |  ' + owner : '');
+    document.getElementById('ndBody').textContent = body || '';
+    document.getElementById('noticeDetailModal').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    // 관리자가 아닌 경우만 조회수 증가
+    if (!localStorage.getItem('adm_id')) {
+        callRpc('increment_notice_readcnt', { p_id: id });
+    }
+}
+
+function closeNoticeDetail() {
+    document.getElementById('noticeDetailModal').style.display = 'none';
+    document.body.style.overflow = '';
+}
+
+// Escape for display
+function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// 페이지 로드 시 공지사항 로드
+window.addEventListener('load', function() { loadNotices(); });
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/vanta@0.5.24/dist/vanta.birds.min.js"></script>

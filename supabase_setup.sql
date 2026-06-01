@@ -121,6 +121,94 @@ $$;
 
 
 -- ============================================================
+-- 10. 공지사항 DB 연동 (Supabase SQL Editor에서 실행)
+-- ============================================================
+
+-- 고정 컬럼 추가 (이미 있으면 무시)
+ALTER TABLE user_textnotice
+  ADD COLUMN IF NOT EXISTS textnotice_pin boolean NOT NULL DEFAULT false;
+
+-- 공개 공지 조회 (anon — 비공개 제외, 고정 우선)
+CREATE OR REPLACE FUNCTION get_notices_public()
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+  RETURN (SELECT COALESCE(jsonb_agg(n), '[]'::jsonb) FROM (
+    SELECT textnotice_id, textnotice_date, textnotice_owner,
+           textnotice_title, textnotice_body, textnotice_readcnt, textnotice_pin
+    FROM user_textnotice
+    WHERE textnotice_hidden = false
+    ORDER BY textnotice_pin DESC, textnotice_date DESC
+  ) n);
+END;$$;
+GRANT EXECUTE ON FUNCTION get_notices_public() TO anon;
+
+-- 관리자 공지 조회 (전체, 숨김 포함)
+CREATE OR REPLACE FUNCTION get_notices_admin(p_admin_id text)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE v admin_master%ROWTYPE;
+BEGIN
+  SELECT * INTO v FROM admin_master WHERE admin_id = p_admin_id AND admin_status = 'active';
+  IF NOT FOUND THEN RETURN jsonb_build_object('error','UNAUTHORIZED'); END IF;
+  RETURN (SELECT COALESCE(jsonb_agg(n), '[]'::jsonb) FROM (
+    SELECT textnotice_id, textnotice_date, textnotice_owner,
+           textnotice_title, textnotice_body, textnotice_readcnt,
+           textnotice_hidden, textnotice_pin
+    FROM user_textnotice
+    ORDER BY textnotice_pin DESC, textnotice_date DESC
+    LIMIT 200
+  ) n);
+END;$$;
+GRANT EXECUTE ON FUNCTION get_notices_admin(text) TO anon;
+
+-- 조회수 증가 (anon 호출 가능 — 관리자 제외는 클라이언트에서 처리)
+CREATE OR REPLACE FUNCTION increment_notice_readcnt(p_id integer)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+  UPDATE user_textnotice SET textnotice_readcnt = textnotice_readcnt + 1
+  WHERE textnotice_id = p_id AND textnotice_hidden = false;
+END;$$;
+GRANT EXECUTE ON FUNCTION increment_notice_readcnt(integer) TO anon;
+
+-- 공지 등록/수정 (p_id=0이면 INSERT, 아니면 UPDATE)
+CREATE OR REPLACE FUNCTION save_notice(
+  p_admin_id text, p_id integer,
+  p_title text, p_body text, p_owner text,
+  p_hidden boolean, p_pin boolean
+) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE v admin_master%ROWTYPE; v_id integer;
+BEGIN
+  SELECT * INTO v FROM admin_master WHERE admin_id = p_admin_id AND admin_status = 'active';
+  IF NOT FOUND THEN RETURN jsonb_build_object('success',false,'error','UNAUTHORIZED'); END IF;
+  IF p_id IS NULL OR p_id = 0 THEN
+    INSERT INTO user_textnotice(textnotice_date,textnotice_owner,textnotice_title,
+      textnotice_body,textnotice_readcnt,textnotice_hidden,textnotice_pin)
+    VALUES(now(),p_owner,p_title,p_body,0,p_hidden,p_pin)
+    RETURNING textnotice_id INTO v_id;
+  ELSE
+    UPDATE user_textnotice SET
+      textnotice_owner=p_owner, textnotice_title=p_title, textnotice_body=p_body,
+      textnotice_hidden=p_hidden, textnotice_pin=p_pin
+    WHERE textnotice_id=p_id;
+    v_id := p_id;
+  END IF;
+  RETURN jsonb_build_object('success',true,'id',v_id);
+END;$$;
+GRANT EXECUTE ON FUNCTION save_notice(text,integer,text,text,text,boolean,boolean) TO anon;
+
+-- 공지 삭제
+CREATE OR REPLACE FUNCTION delete_notice(p_admin_id text, p_id integer)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE v admin_master%ROWTYPE;
+BEGIN
+  SELECT * INTO v FROM admin_master WHERE admin_id = p_admin_id AND admin_status = 'active';
+  IF NOT FOUND THEN RETURN jsonb_build_object('success',false,'error','UNAUTHORIZED'); END IF;
+  DELETE FROM user_textnotice WHERE textnotice_id = p_id;
+  RETURN jsonb_build_object('success',true);
+END;$$;
+GRANT EXECUTE ON FUNCTION delete_notice(text,integer) TO anon;
+
+
+-- ============================================================
 -- 8. anon 권한 부여 (브라우저에서 직접 호출용)
 --    Supabase Dashboard → Settings → API → anon public key 사용
 -- ============================================================
