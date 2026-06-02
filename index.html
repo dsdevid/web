@@ -138,31 +138,107 @@
             border-bottom: none !important;
         }
 
-        /* ── Hero Tile ── */
-        .hero-tile {
-            background: #016cca;
-            padding: 64px 24px;
-            position: relative;
-            min-height: 170px;
-            display: flex;
-            align-items: center;
+        /* ── Vertical Accordion (HERO) ── */
+        .v-acc-wrap {
+            background: var(--parchment);
+            padding: 24px;
         }
-
-        .hero-quote-wrap {
+        .v-acc {
             max-width: 980px;
+            height: 315px;
             margin: 0 auto;
-            width: 100%;
-            position: relative;
-            z-index: 1;
+            display: flex;
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 6px 24px rgba(0,0,0,0.12);
         }
-
-        .hero-quote {
-            font-size: clamp(22px, 3vw, 34px);
+        .va-panel {
+            position: relative;
+            flex: 0 1 88px;
+            display: flex;
+            overflow: hidden;
+            color: #fff;
+            background-color: var(--va-color);
+            background-image: var(--va-img, none);
+            background-size: cover;
+            background-position: center;
+            background-blend-mode: multiply;
+            transition: flex-grow 0.5s ease;
+        }
+        .va-panel.va-open { flex-grow: 6; }
+        .va-bar {
+            flex-shrink: 0;
+            width: 88px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            padding: 20px 0;
+            cursor: pointer;
+            user-select: none;
+        }
+        .va-ico { font-size: 30px; line-height: 1; }
+        .va-vtitle {
+            writing-mode: vertical-rl;
+            font-size: 18px;
             font-weight: 600;
-            letter-spacing: -0.374px;
-            line-height: 1.45;
-            color: #ffffff;
-            max-width: 560px;
+            letter-spacing: 2px;
+            white-space: nowrap;
+        }
+        .va-new {
+            background: #fff;
+            color: #d93025;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            padding: 2px 8px;
+            border-radius: 9999px;
+        }
+        .va-content {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            align-items: flex-end;
+            padding: 28px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .va-panel.va-open .va-content { opacity: 1; transition-delay: 0.15s; }
+        .va-h { font-size: 24px; font-weight: 700; letter-spacing: -0.374px; margin-bottom: 8px; }
+        .va-desc p { font-size: 14px; line-height: 1.6; color: rgba(255,255,255,0.92); max-width: 380px; }
+        .va-go {
+            display: inline-block;
+            margin-top: 14px;
+            background: rgba(255,255,255,0.22);
+            color: #fff;
+            padding: 7px 18px;
+            border-radius: 9999px;
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+            letter-spacing: -0.12px;
+            transition: background 0.15s;
+        }
+        .va-go:hover { background: rgba(255,255,255,0.38); }
+
+        /* 바로가기 이동 시 타이틀 블링크 */
+        @keyframes titleBlink { 0%,100% { opacity: 1; } 50% { opacity: 0.15; } }
+        .u-title.blink { animation: titleBlink 0.4s ease 3; }
+
+        @media (max-width: 833px) {
+            .v-acc { flex-direction: column; height: auto; }
+            .va-panel, .va-panel.va-open { flex: none; }
+            .va-bar {
+                flex-direction: row;
+                width: auto;
+                gap: 14px;
+                padding: 16px 20px;
+                justify-content: flex-start;
+            }
+            .va-vtitle { writing-mode: horizontal-tb; transform: none; letter-spacing: -0.224px; }
+            .va-content { display: none; padding: 0 20px 24px; }
+            .va-panel.va-open .va-content { display: flex; opacity: 1; }
         }
 
         .btn-pill {
@@ -250,122 +326,6 @@
             align-items: start;
         }
 
-        /* ── Quick Grid ── */
-        .quick-grid {
-            display: flex;
-            justify-content: center;
-            gap: 8px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-
-        /* Flip Card */
-        .flip-card {
-            width: 140px;
-            flex-shrink: 0;
-            height: 140px;
-            perspective: 1000px;
-        }
-
-        .flip-card-inner {
-            width: 100%;
-            height: 100%;
-            position: relative;
-            transform-style: preserve-3d;
-            transition: transform 0.6s;
-        }
-
-        .flip-card:hover .flip-card-inner {
-            transform: rotateY(180deg);
-        }
-
-        .flip-card-front,
-        .flip-card-back {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            backface-visibility: hidden;
-            border-radius: 18px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            padding: 14px 10px;
-            text-align: center;
-        }
-
-        .flip-card-front {
-            background: var(--canvas);
-            border: 1px solid var(--hairline);
-            transform: rotateY(0deg);
-            overflow: hidden;
-        }
-
-        .qt-ribbon {
-            position: absolute;
-            top: 12px;
-            left: -30px;
-            background: #d93025;
-            color: #fff;
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-            padding: 3px 32px;
-            transform: rotate(-45deg);
-            box-shadow: 0 1px 3px rgba(0,0,0,0.25);
-        }
-
-        .flip-card-back {
-            background: #6b7280;
-            transform: rotateY(180deg);
-        }
-
-        .qt-icon { font-size: 46px; }
-
-        .qt-name {
-            font-size: 13px;
-            font-weight: 600;
-            letter-spacing: -0.224px;
-            color: #ffffff;
-        }
-
-        .qt-back-desc {
-            font-size: 12px;
-            letter-spacing: -0.12px;
-            color: rgba(255,255,255,0.85);
-            line-height: 1.4;
-        }
-
-        .qt-back-link {
-            display: inline-block;
-            margin-top: 6px;
-            font-size: 12px;
-            font-weight: 600;
-            color: #fff;
-            background: rgba(255,255,255,0.2);
-            padding: 5px 14px;
-            border-radius: 9999px;
-            text-decoration: none;
-            letter-spacing: -0.12px;
-            transition: background 0.15s;
-        }
-
-        .qt-back-link:hover { background: rgba(255,255,255,0.35); }
-
-        /* 카드별 앞면 색상 */
-        .flip-card:nth-child(1) .flip-card-front { background: #1d6fe8; border-color: #1d6fe8; }
-        .flip-card:nth-child(2) .flip-card-front { background: #16a34a; border-color: #16a34a; }
-        .flip-card:nth-child(3) .flip-card-front { background: #d97706; border-color: #d97706; }
-        .flip-card:nth-child(4) .flip-card-front { background: #7c3aed; border-color: #7c3aed; }
-
-        /* 터치 기기: CSS hover 비활성화 */
-        @media (pointer: coarse) {
-            .flip-card:hover .flip-card-inner {
-                transform: rotateY(0deg);
-            }
-        }
-
         /* ── Utility Card ── */
         .u-card {
             background: var(--canvas);
@@ -373,6 +333,7 @@
             border-radius: 18px;
             overflow: hidden;
             margin-bottom: 20px;
+            scroll-margin-top: 56px;
         }
 
         .u-card-head {
@@ -771,8 +732,6 @@
             .stat-cell:nth-child(3) { border-top: 1px solid var(--hairline); }
             .stat-cell:nth-child(4) { border-top: 1px solid var(--hairline); border-right: none; }
 
-            .quick-grid { gap: 6px; }
-            .flip-card { width: 120px; height: 120px; }
             .sidebar-col { grid-template-columns: 1fr; }
         }
 
@@ -999,10 +958,62 @@
     </div>
 </header>
 
-<!-- ── Hero Tile ── -->
-<section class="hero-tile" id="hero-vanta">
-    <div class="hero-quote-wrap">
-        <div class="hero-quote" id="heroQuote"></div>
+<!-- ── Vertical Accordion (HERO) ── -->
+<section class="v-acc-wrap">
+    <div class="v-acc" id="vAcc">
+        <div class="va-panel va-open" style="--va-color:#d97706;--va-img:url('img/weekly.jpg')">
+            <div class="va-bar">
+                <div class="va-ico">📅</div>
+                <div class="va-vtitle">주간공지</div>
+            </div>
+            <div class="va-content">
+                <div class="va-desc">
+                    <div class="va-h">주간공지</div>
+                    <p>매주 발행되는 주간 안내문(PDF)을 확인하세요.</p>
+                    <a href="#weekly" class="va-go">바로가기 →</a>
+                </div>
+            </div>
+        </div>
+        <div class="va-panel" style="--va-color:#1d6fe8;--va-img:url('img/notice.jpg')">
+            <div class="va-bar">
+                <span class="va-new" id="noticeNewRibbon" style="display:none">New</span>
+                <div class="va-ico">📢</div>
+                <div class="va-vtitle">공지사항</div>
+            </div>
+            <div class="va-content">
+                <div class="va-desc">
+                    <div class="va-h">공지사항</div>
+                    <p>알림 · 행사 · 훈련 등 최신 공지를 확인하세요.</p>
+                    <a href="#notice" class="va-go">바로가기 →</a>
+                </div>
+            </div>
+        </div>
+        <div class="va-panel" style="--va-color:#16a34a;--va-img:url('img/statistics.jpg')">
+            <div class="va-bar">
+                <div class="va-ico">📊</div>
+                <div class="va-vtitle">통계현황</div>
+            </div>
+            <div class="va-content">
+                <div class="va-desc">
+                    <div class="va-h">통계현황</div>
+                    <p>벌점 및 반별 통계 현황을 확인하세요.</p>
+                    <a href="#stats" class="va-go">바로가기 →</a>
+                </div>
+            </div>
+        </div>
+        <div class="va-panel" style="--va-color:#7c3aed;--va-img:url('img/rules.jpg')">
+            <div class="va-bar">
+                <div class="va-ico">📖</div>
+                <div class="va-vtitle">학원규정</div>
+            </div>
+            <div class="va-content">
+                <div class="va-desc">
+                    <div class="va-h">학원규정</div>
+                    <p>학원 생활·학습 규정을 조회하세요.</p>
+                    <a href="#rules" class="va-go">바로가기 →</a>
+                </div>
+            </div>
+        </div>
     </div>
 </section>
 
@@ -1012,61 +1023,6 @@
 
         <!-- Content Column -->
         <div class="content-col">
-
-            <!-- Quick Access -->
-            <div class="quick-grid">
-                <div class="flip-card">
-                    <div class="flip-card-inner">
-                        <div class="flip-card-front">
-                            <div class="qt-icon">📅</div>
-                            <div class="qt-name">주간공지</div>
-                        </div>
-                        <div class="flip-card-back">
-                            <div class="qt-back-desc">주간 안내문 PDF</div>
-                            <a href="#weekly" class="qt-back-link">바로가기 →</a>
-                        </div>
-                    </div>
-                </div>
-                <div class="flip-card">
-                    <div class="flip-card-inner">
-                        <div class="flip-card-front">
-                            <span class="qt-ribbon" id="noticeNewRibbon" style="display:none">New</span>
-                            <div class="qt-icon">📢</div>
-                            <div class="qt-name">공지사항</div>
-                        </div>
-                        <div class="flip-card-back">
-                            <div class="qt-back-desc">알림 · 행사 · 훈련</div>
-                            <a href="#notice" class="qt-back-link">바로가기 →</a>
-                        </div>
-                    </div>
-                </div>
-                <div class="flip-card">
-                    <div class="flip-card-inner">
-                        <div class="flip-card-front">
-                            <div class="qt-icon">📊</div>
-                            <div class="qt-name">통계 현황</div>
-                        </div>
-                        <div class="flip-card-back">
-                            <div class="qt-back-desc">벌점 · 반별 통계</div>
-                            <a href="#stats" class="qt-back-link">바로가기 →</a>
-                        </div>
-                    </div>
-                </div>
-                <div class="flip-card">
-                    <div class="flip-card-inner">
-                        <div class="flip-card-front">
-                            <div class="qt-icon">📖</div>
-                            <div class="qt-name">학원규정</div>
-                        </div>
-                        <div class="flip-card-back">
-                            <div class="qt-back-desc">학원
-                                
-                                규정 조회</div>
-                            <a href="#rules" class="qt-back-link">바로가기 →</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
             <!-- Notice -->
             <div class="u-card" id="notice">
@@ -1519,77 +1475,29 @@ function esc(s) {
 // 페이지 로드 시 공지사항 로드
 window.addEventListener('load', function() { loadNotices(); });
 </script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/vanta@0.5.24/dist/vanta.birds.min.js"></script>
 <script>
-VANTA.BIRDS({
-  el: "#hero-vanta",
-  mouseControls: true,
-  touchControls: true,
-  gyroControls: false,
-  minHeight: 100.00,
-  minWidth: 200.00,
-  scale: 1.00,
-  scaleMobile: 1.00,
-  backgroundColor: 0x00447f,
-  color1: 0xfc2111,
-  color2: 0xf8f801,
-  colorMode: "lerp",
-  birdSize: 1.2,
-  wingSpan: 22,
-  speedLimit: 4,
-  separation: 60,
-  alignment: 50,
-  cohesion: 50,
-  quantity: 4
-});
-</script>
-<script>
-    const _quotes = [
-        "천천히 가도 괜찮아,\n멈추지만 않으면...",
-        "모르는 게 부끄러운 게 아냐,\n안 보는 게 부끄러운 거지",
-        "비교는 남과 하지 말고,\n어제의 나랑 해",
-        "딱 한 페이지만 더,\n그게 쌓이면 산이 돼",
-        "잠깐 쉬어도 괜찮아,\n속도보다 완주가 중요하니까",
-        "남들이 몇 문제 풀었는지 말고,\n오늘 내가 얼마나 이해했는지가 중요해"
-    ];
-    const _idx = parseInt(localStorage.getItem('quoteIdx') || '0');
-    document.getElementById('heroQuote').innerHTML = _quotes[_idx].replace(/\n/g, '<br>');
-    localStorage.setItem('quoteIdx', (_idx + 1) % _quotes.length);
-
-    // 터치 기기 플립 카드 동작
+    // 세로 아코디언 패널 토글
     (function() {
-        if (!window.matchMedia('(pointer: coarse)').matches) return;
-        document.querySelectorAll('.flip-card').forEach(function(card) {
-            var flipped = false;
-            var timer = null;
-            var inner = card.querySelector('.flip-card-inner');
+        var acc = document.getElementById('vAcc');
+        if (!acc) return;
+        acc.querySelectorAll('.va-panel').forEach(function(p) {
+            p.querySelector('.va-bar').addEventListener('click', function() {
+                acc.querySelectorAll('.va-panel').forEach(function(x) { x.classList.remove('va-open'); });
+                p.classList.add('va-open');
+            });
+        });
 
-            card.addEventListener('click', function(e) {
-                if (!flipped) {
-                    // 첫 탭: 뒤집기
-                    flipped = true;
-                    inner.style.transform = 'rotateY(180deg)';
-                    timer = setTimeout(function() {
-                        inner.style.transform = 'rotateY(0deg)';
-                        flipped = false;
-                    }, 10000);
-                    e.preventDefault();
-                } else {
-    
-                    clearTimeout(timer);
-                    if (e.target.closest('.qt-back-link')) {
-                        // 링크 탭: 이동 허용, 잠시 후 복귀
-                        flipped = false;
-                        setTimeout(function() {
-                            inner.style.transform = 'rotateY(0deg)';
-                        }, 400);
-                    } else {
-                        // 링크 외 탭: 앞면 복귀
-                        inner.style.transform = 'rotateY(0deg)';
-                        flipped = false;
-                        e.preventDefault();
-                    }
+        acc.querySelectorAll('.va-go').forEach(function(link) {
+            link.addEventListener('click', function(e) {
+                var target = document.querySelector(link.getAttribute('href'));
+                if (!target) return;
+                e.preventDefault();
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                var title = target.querySelector('.u-title');
+                if (title) {
+                    title.classList.remove('blink');
+                    void title.offsetWidth;
+                    title.classList.add('blink');
                 }
             });
         });
