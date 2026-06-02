@@ -299,6 +299,21 @@
             background: var(--canvas);
             border: 1px solid var(--hairline);
             transform: rotateY(0deg);
+            overflow: hidden;
+        }
+
+        .qt-ribbon {
+            position: absolute;
+            top: 12px;
+            left: -30px;
+            background: #d93025;
+            color: #fff;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            padding: 3px 32px;
+            transform: rotate(-45deg);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.25);
         }
 
         .flip-card-back {
@@ -991,28 +1006,6 @@
     </div>
 </section>
 
-<!-- ── Stats Strip ── -->
-<div class="stats-strip">
-    <div class="stats-strip-inner">
-        <div class="stat-cell">
-            <div class="stat-num">1,200</div>
-            <div class="stat-label">총 재원생</div>
-        </div>
-        <div class="stat-cell">
-            <div class="stat-num">12</div>
-            <div class="stat-label">개설 반</div>
-        </div>
-        <div class="stat-cell">
-            <div class="stat-num">매일</div>
-            <div class="stat-label">통계 갱신</div>
-        </div>
-        <div class="stat-cell">
-            <div class="stat-num">500</div>
-            <div class="stat-label">최대 동시 접속</div>
-        </div>
-    </div>
-</div>
-
 <!-- ── Main ── -->
 <main>
     <div class="main-wrap">
@@ -1025,6 +1018,19 @@
                 <div class="flip-card">
                     <div class="flip-card-inner">
                         <div class="flip-card-front">
+                            <div class="qt-icon">📅</div>
+                            <div class="qt-name">주간공지</div>
+                        </div>
+                        <div class="flip-card-back">
+                            <div class="qt-back-desc">주간 안내문 PDF</div>
+                            <a href="#weekly" class="qt-back-link">바로가기 →</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="flip-card">
+                    <div class="flip-card-inner">
+                        <div class="flip-card-front">
+                            <span class="qt-ribbon" id="noticeNewRibbon" style="display:none">New</span>
                             <div class="qt-icon">📢</div>
                             <div class="qt-name">공지사항</div>
                         </div>
@@ -1043,18 +1049,6 @@
                         <div class="flip-card-back">
                             <div class="qt-back-desc">벌점 · 반별 통계</div>
                             <a href="#stats" class="qt-back-link">바로가기 →</a>
-                        </div>
-                    </div>
-                </div>
-                <div class="flip-card">
-                    <div class="flip-card-inner">
-                        <div class="flip-card-front">
-                            <div class="qt-icon">📅</div>
-                            <div class="qt-name">주간공지</div>
-                        </div>
-                        <div class="flip-card-back">
-                            <div class="qt-back-desc">주간 안내문 PDF</div>
-                            <a href="#weekly" class="qt-back-link">바로가기 →</a>
                         </div>
                     </div>
                 </div>
@@ -1452,6 +1446,9 @@ async function loadNotices() {
     document.getElementById('noticeEmpty').style.display =
         (pinned.length + normal.length === 0) ? 'block' : 'none';
 
+    document.getElementById('noticeNewRibbon').style.display =
+        list.some(function(r) { return isToday(r.textnotice_date); }) ? 'block' : 'none';
+
     // 이벤트 위임 (중복 등록 방지)
     var p = document.getElementById('noticePinList');
     var s = document.getElementById('noticeScrollList');
@@ -1480,16 +1477,17 @@ function handleNoticeClick(e) {
     var n = _notices.find(function(x) { return x.textnotice_id === id; });
     if (!n) return;
     openNoticeDetail(id, n.textnotice_title, n.textnotice_body,
-                     n.textnotice_date, n.textnotice_owner);
+                     n.textnotice_date, n.textnotice_owner, n.textnotice_readcnt);
 }
 
-function openNoticeDetail(id, title, body, date, owner) {
+function openNoticeDetail(id, title, body, date, owner, readcnt) {
     var dateStr = date ? date.substring(0, 10).replace(/-/g, '.') : '';
     document.getElementById('ndTitle').textContent = title || '';
     var meta = document.getElementById('ndMeta');
     meta.innerHTML =
         '<span class="nd-meta-item"><span class="nd-meta-label">날짜<\/span><span class="nd-meta-value">' + esc(dateStr) + '<\/span><\/span>' +
-        '<span class="nd-meta-item"><span class="nd-meta-label">게시자<\/span><span class="nd-meta-value">관리자<\/span><\/span>';
+        '<span class="nd-meta-item"><span class="nd-meta-label">게시자<\/span><span class="nd-meta-value">관리자<\/span><\/span>' +
+        '<span class="nd-meta-item" style="margin-left:auto;margin-right:0"><span class="nd-meta-label">조회 :<\/span><span class="nd-meta-value">' + (readcnt || 0) + '회<\/span><\/span>';
     document.getElementById('ndBody').textContent = body || '';
     document.getElementById('noticeDetailModal').style.display = 'flex';
     document.body.style.overflow = 'hidden';
@@ -1502,6 +1500,15 @@ function openNoticeDetail(id, title, body, date, owner) {
 function closeNoticeDetail() {
     document.getElementById('noticeDetailModal').style.display = 'none';
     document.body.style.overflow = '';
+}
+
+// 오늘 등록 여부 (로컬 날짜 기준)
+function isToday(dateStr) {
+    if (!dateStr) return false;
+    var d = new Date(dateStr), n = new Date();
+    return d.getFullYear() === n.getFullYear()
+        && d.getMonth() === n.getMonth()
+        && d.getDate() === n.getDate();
 }
 
 // Escape for display
