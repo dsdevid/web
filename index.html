@@ -165,8 +165,11 @@
             background-blend-mode: multiply;
             transition: flex-grow 0.5s ease;
         }
+        .va-panel + .va-panel { margin-left: -28px; }
+        .va-panel:last-child { margin-right: -28px; }
         .va-panel.va-open { flex-grow: 6; }
         .va-bar {
+            position: relative;
             flex-shrink: 0;
             width: 88px;
             display: flex;
@@ -180,20 +183,36 @@
         }
         .va-ico { font-size: 30px; line-height: 1; }
         .va-vtitle {
+            position: relative;
             writing-mode: vertical-rl;
             font-size: 25px;
             font-weight: 600;
             letter-spacing: 2px;
             white-space: nowrap;
+            padding-right: 28px;
+        }
+        .va-vtitle::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            right: 6px;
+            width: 6px;
+            background: var(--va-comp, var(--va-color));
         }
         .va-new {
+            position: absolute;
+            top: 56px;
+            left: 30px;
+            transform: translateX(-50%) rotate(-7deg);
             background: #fff;
             color: #d93025;
             font-size: 10px;
             font-weight: 700;
             letter-spacing: 0.5px;
-            padding: 2px 8px;
+            padding: 3px 9px;
             border-radius: 9999px;
+            box-shadow: 0 2px 7px rgba(0,0,0,0.28);
         }
         .va-content {
             flex: 1;
@@ -229,6 +248,8 @@
         @media (max-width: 833px) {
             .v-acc { flex-direction: column; height: auto; }
             .va-panel, .va-panel.va-open { flex: none; }
+            .va-panel + .va-panel { margin-left: 0; }
+            .va-panel:last-child { margin-right: 0; }
             .va-bar {
                 flex-direction: row;
                 width: auto;
@@ -236,7 +257,9 @@
                 padding: 16px 20px;
                 justify-content: flex-start;
             }
-            .va-vtitle { writing-mode: horizontal-tb; transform: none; letter-spacing: -0.224px; }
+            .va-vtitle { writing-mode: horizontal-tb; transform: none; letter-spacing: -0.224px; border-right: none; padding-right: 0; }
+            .va-vtitle::after { display: none; }
+            .va-new { position: static; transform: none; }
             .va-content { display: none; padding: 0 20px 24px; }
             .va-panel.va-open .va-content { display: flex; opacity: 1; }
         }
@@ -929,8 +952,8 @@
             </a>
             <div class="nav-links">
                 <a href="#notice">공지사항</a>
-                <a href="#stats">통계 현황</a>
                 <a href="#weekly">주간공지</a>
+                <a href="#stats">통계 현황</a>
                 <a href="#rules">학원규정</a>
             </div>
             <div class="nav-right" id="navRight">
@@ -951,8 +974,8 @@
     </nav>
     <div class="mobile-nav" id="mobileNav">
         <a href="#notice" onclick="closeNav()">공지사항</a>
-        <a href="#stats" onclick="closeNav()">통계 현황</a>
         <a href="#weekly" onclick="closeNav()">주간공지</a>
+        <a href="#stats" onclick="closeNav()">통계 현황</a>
         <a href="#rules" onclick="closeNav()">학원규정</a>
         <a href="#" class="nav-pill" onclick="openLoginModal(event);closeNav()">로그인</a>
     </div>
@@ -961,50 +984,46 @@
 <!-- ── Vertical Accordion (HERO) ── -->
 <section class="v-acc-wrap">
     <div class="v-acc" id="vAcc">
-        <div class="va-panel va-open" style="--va-color:#d97706;--va-img:url('img/weekly.jpg')">
-            <div class="va-bar">
-                <div class="va-vtitle">주간공지</div>
-            </div>
-            <div class="va-content">
-                <div class="va-desc">
-                    <div class="va-h">주간공지</div>
-                    <p>매주 발행되는 주간 안내문(PDF)을 확인하세요.</p>
-                    <a href="#weekly" class="va-go">바로가기 →</a>
-                </div>
-            </div>
-        </div>
-        <div class="va-panel" style="--va-color:#1d6fe8;--va-img:url('img/notice.jpg')">
+        <div class="va-panel va-open" style="--va-color:#1d6fe8;--va-comp:#e8961d;--va-img:url('img/notice.jpg')">
             <div class="va-bar">
                 <span class="va-new" id="noticeNewRibbon" style="display:none">New</span>
                 <div class="va-vtitle">공지사항</div>
             </div>
             <div class="va-content">
                 <div class="va-desc">
-                    <div class="va-h">공지사항</div>
                     <p>알림 · 행사 · 훈련 등 최신 공지를 확인하세요.</p>
                     <a href="#notice" class="va-go">바로가기 →</a>
                 </div>
             </div>
         </div>
-        <div class="va-panel" style="--va-color:#16a34a;--va-img:url('img/statistics.jpg')">
+        <div class="va-panel" style="--va-color:#d97706;--va-comp:#0668d9;--va-img:url('img/weekly.jpg')">
+            <div class="va-bar">
+                <div class="va-vtitle">주간공지</div>
+            </div>
+            <div class="va-content">
+                <div class="va-desc">
+                    <p>매주 발행되는 주간 안내문(PDF)을 확인하세요.</p>
+                    <a href="#weekly" class="va-go">바로가기 →</a>
+                </div>
+            </div>
+        </div>
+        <div class="va-panel" style="--va-color:#16a34a;--va-comp:#a3166f;--va-img:url('img/statistics.jpg')">
             <div class="va-bar">
                 <div class="va-vtitle">통계현황</div>
             </div>
             <div class="va-content">
                 <div class="va-desc">
-                    <div class="va-h">통계현황</div>
                     <p>벌점 및 반별 통계 현황을 확인하세요.</p>
                     <a href="#stats" class="va-go">바로가기 →</a>
                 </div>
             </div>
         </div>
-        <div class="va-panel" style="--va-color:#7c3aed;--va-img:url('img/rules.jpg')">
+        <div class="va-panel" style="--va-color:#7c3aed;--va-comp:#abed3a;--va-img:url('img/rules.jpg')">
             <div class="va-bar">
                 <div class="va-vtitle">학원규정</div>
             </div>
             <div class="va-content">
                 <div class="va-desc">
-                    <div class="va-h">학원규정</div>
                     <p>학원 생활·학습 규정을 조회하세요.</p>
                     <a href="#rules" class="va-go">바로가기 →</a>
                 </div>
@@ -1483,19 +1502,23 @@ window.addEventListener('load', function() { loadNotices(); });
             });
         });
 
-        acc.querySelectorAll('.va-go').forEach(function(link) {
-            link.addEventListener('click', function(e) {
-                var target = document.querySelector(link.getAttribute('href'));
-                if (!target) return;
-                e.preventDefault();
-                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                var title = target.querySelector('.u-title');
-                if (title) {
-                    title.classList.remove('blink');
-                    void title.offsetWidth;
-                    title.classList.add('blink');
-                }
-            });
+        function goAndBlink(link, e) {
+            var href = link.getAttribute('href');
+            if (!href || href === '#') return;
+            var target = document.querySelector(href);
+            if (!target) return;
+            e.preventDefault();
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            var title = target.querySelector('.u-title');
+            if (title) {
+                title.classList.remove('blink');
+                void title.offsetWidth;
+                title.classList.add('blink');
+            }
+        }
+
+        document.querySelectorAll('.va-go, .nav-links a, .mobile-nav a').forEach(function(link) {
+            link.addEventListener('click', function(e) { goAndBlink(link, e); });
         });
     })();
 
