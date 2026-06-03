@@ -49,10 +49,8 @@ CREATE TABLE IF NOT EXISTS user_master (
   mst_locked_until     timestamptz,                                -- DB 소유 (null = 잠금 없음)
 
   CONSTRAINT user_master_pkey    PRIMARY KEY (mst_users),
-  CONSTRAINT user_master_id_uniq UNIQUE (mst_id)                   -- 학번 중복 방지
+  CONSTRAINT user_master_id_uniq UNIQUE (mst_id)                   -- 학번 중복 방지 (UNIQUE가 인덱스 겸함)
 );
-
-CREATE INDEX IF NOT EXISTS idx_user_mst_id ON user_master (mst_id);
 
 
 -- 2-2. sessions (세션 토큰)
@@ -326,8 +324,10 @@ BEGIN
   END IF;
 
   UPDATE user_master SET
-    mst_passwd_hash    = crypt(p_temp_password, gen_salt('bf', 10)),
-    mst_is_first_login = 'Y'
+    mst_passwd_hash      = crypt(p_temp_password, gen_salt('bf', 10)),
+    mst_is_first_login   = 'Y',
+    mst_login_fail_count = 0,
+    mst_locked_until     = NULL          -- 초기화 시 잠금도 해제
   WHERE mst_id = p_student_id
   RETURNING mst_users INTO v_users;
 
@@ -375,7 +375,7 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'error', 'EMPTY');
   END IF;
 
-  -- upsert (INSERT 시에만 임시비번 = 학번 해시)
+  -- upsert (신규는 해시 없이 INSERT, is_first_login='Y' — 첫 로그인 시 학번이 임시비번)
   WITH up AS (
     INSERT INTO user_master (mst_id, mst_name, mst_ban, mst_prt, mst_sex, mst_lnce,
                              mst_is_first_login)

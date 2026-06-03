@@ -167,6 +167,7 @@
         }
         .va-panel + .va-panel { margin-left: -28px; }
         .va-panel:last-child { margin-right: -28px; }
+        .va-panel.va-last { margin-right: -28px; }   /* 마지막 보이는 패널(권한 숨김 대응) */
         .va-panel.va-open { flex-grow: 6; }
         .va-bar {
             position: relative;
@@ -250,6 +251,7 @@
             .va-panel, .va-panel.va-open { flex: none; }
             .va-panel + .va-panel { margin-left: 0; }
             .va-panel:last-child { margin-right: 0; }
+            .va-panel.va-last { margin-right: 0; }
             .va-bar {
                 flex-direction: row;
                 width: auto;
@@ -1351,7 +1353,6 @@ async function doStudentLogin() {
 
     if (!r || !r.success) {
         var msgs = { NOT_FOUND:'학번을 찾을 수 없습니다', WRONG_PASSWORD:'비밀번호가 올바르지 않습니다',
-                     NO_PASSWORD:'비밀번호가 설정되지 않았습니다. 관리자에게 문의하세요',
                      LOCKED:'5회 실패로 잠겼습니다. 30분 후 다시 시도하세요' };
         showModalError(!r ? '서버 오류' : (msgs[r.error] || '로그인 실패'));
         document.getElementById('genPw').value = '';

@@ -93,6 +93,14 @@ function applyAccess() {
       else       a.style.display     = disp;
     });
   });
+
+  // 마지막 보이는 아코디언 패널에 va-last (타이틀 우측 세로선 숨김 -28px)
+  var last = null;
+  document.querySelectorAll('.va-panel').forEach(function (pan) {
+    pan.classList.remove('va-last');
+    if (pan.style.display !== 'none') last = pan;
+  });
+  if (last) last.classList.add('va-last');
 }
 
 // 보호 페이지 가드 — 보호 페이지 최상단에서 호출. 미허가면 홈으로.
