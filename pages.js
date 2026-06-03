@@ -2,11 +2,12 @@
 // 페이지 레지스트리 — 계층(레벨) + 권한 캐스케이드
 //   새 페이지는 PAGES 에 한 줄 추가하면 등록 + 권한 지정 완료.
 //   parent : 상위 페이지 id (null = 레벨1 최상위)
-//   access : 'user'(로그인 학생 이상) | 'admin'(관리자만)
+//   access : 'public'(누구나) | 'user'(로그인 학생 이상) | 'admin'(관리자만)
 //
 //   ★ 캐스케이드: 어떤 페이지 접근 = 자신 + 모든 상위 노드를 전부 통과해야 함.
 //      상위(레벨1)가 차단되면 그 하위(레벨2,3…) 전부 차단.
-//   ★ 권한: admin = 전체 허용 / user = 'user' 노드만 / guest = 전부 차단.
+//   ★ 권한 레벨: public(0) < user(1) < admin(2). 역할 레벨 >= 노드 요구 레벨이면 통과.
+//      guest=0, user=1, admin=2.
 //
 //   사용:
 //     - 레벨1 섹션 노출/숨김(메인):  applyAccess()   (로드 + 로그인/로그아웃 시 호출)
@@ -19,12 +20,12 @@
 
 var PAGES = [
   // ── 레벨1 (parent: null) — 메인 섹션 ──
-  { id: 'notice',  name: '공지사항',     url: '#notice',  access: 'user',  parent: null },
-  { id: 'weekly',  name: '주간공지',     url: '#weekly',  access: 'user',  parent: null },
-  { id: 'stats',   name: '통계현황',     url: '#stats',   access: 'admin', parent: null },
-  { id: 'search',  name: '검색',         url: '#search',  access: 'user',  parent: null },
-  { id: 'rules',   name: '학원규정',     url: '#rules',   access: 'user',  parent: null },
-  { id: 'penalty', name: '반별벌점현황', url: '#penalty', access: 'admin', parent: null },
+  { id: 'notice',  name: '공지사항',     url: '#notice',  access: 'public', parent: null },
+  { id: 'weekly',  name: '주간공지',     url: '#weekly',  access: 'public', parent: null },
+  { id: 'stats',   name: '통계현황',     url: '#stats',   access: 'user',   parent: null },
+  { id: 'search',  name: '검색',         url: '#search',  access: 'public', parent: null },
+  { id: 'rules',   name: '학원규정',     url: '#rules',   access: 'public', parent: null },
+  { id: 'penalty', name: '반별벌점현황', url: '#penalty', access: 'user',   parent: null },
 
   // ── 레벨2,3… 하위 페이지 — parent 지정해 추가 (예시) ──
   // { id: 'penalty_list', name: '벌점내역', url: 'penalty.html', access: 'admin', parent: 'penalty' },
@@ -37,14 +38,20 @@ function currentRole() {
   return 'guest';
 }
 
+// 권한 레벨: public(0) < user(1) < admin(2)
+var ACCESS_LEVEL = { public: 0, user: 1, admin: 2 };
+function roleLevel(role) {
+  return role === 'admin' ? 2 : role === 'user' ? 1 : 0;   // guest = 0
+}
+
 // 자신부터 루트까지 거슬러 올라가며 전부 통과해야 true (캐스케이드)
+//   역할 레벨 >= 노드 요구 레벨이어야 통과. 상위 노드 하나라도 부족하면 차단.
 function canAccess(id, role) {
   role = role || currentRole();
+  var rl = roleLevel(role);
   var p = PAGES.find(function (x) { return x.id === id; });
   while (p) {
-    if (role === 'admin') { /* 통과 */ }
-    else if (role === 'user') { if (p.access !== 'user') return false; }
-    else return false;                               // guest
+    if (rl < ACCESS_LEVEL[p.access]) return false;
     p = p.parent ? PAGES.find(function (x) { return x.id === p.parent; }) : null;
   }
   return true;

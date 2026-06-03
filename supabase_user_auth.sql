@@ -108,6 +108,10 @@ DECLARE
   v_role       text;
   v_expires    timestamptz;
 BEGIN
+  -- 0) 만료 세션 전역 청소 + logs 2일 초과분 삭제 (기회적)
+  DELETE FROM sessions WHERE ses_expires_at < now();
+  DELETE FROM logs     WHERE log_timestamp  < now() - interval '2 days';
+
   -- 1) 기존 세션 삭제 (중복 접속 방지)
   DELETE FROM sessions WHERE ses_user_id = p_user_id;
 
@@ -216,6 +220,11 @@ AS $$
 DECLARE
   v_ses sessions%ROWTYPE;
 BEGIN
+  -- 만료 세션 전역 청소 (본인 토큰 제외 — 본인 만료는 아래에서 EXPIRED 처리)
+  DELETE FROM sessions WHERE ses_expires_at < now() AND ses_session_id <> p_session_id;
+  -- logs 2일 초과분 삭제 (기회적)
+  DELETE FROM logs WHERE log_timestamp < now() - interval '2 days';
+
   SELECT * INTO v_ses FROM sessions WHERE ses_session_id = p_session_id;
 
   IF NOT FOUND THEN
