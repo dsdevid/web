@@ -22,9 +22,9 @@ var PAGES = [
   // ── 레벨1 (parent: null) — 메인 섹션 ──
   { id: 'notice',  name: '공지사항',     url: '#notice',  access: 'public', parent: null },
   { id: 'weekly',  name: '주간공지',     url: '#weekly',  access: 'public', parent: null },
+  { id: 'rules',   name: '학원규정',     url: '#rules',   access: 'public', parent: null },
   { id: 'stats',   name: '통계현황',     url: '#stats',   access: 'user',   parent: null },
   { id: 'search',  name: '검색',         url: '#search',  access: 'public', parent: null },
-  { id: 'rules',   name: '학원규정',     url: '#rules',   access: 'public', parent: null },
   { id: 'penalty', name: '반별벌점현황', url: '#penalty', access: 'user',   parent: null },
 
   // ── 레벨2,3… 하위 페이지 — parent 지정해 추가 (예시) ──

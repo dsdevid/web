@@ -958,8 +958,8 @@
             <div class="nav-links">
                 <a href="#notice">공지사항</a>
                 <a href="#weekly">주간공지</a>
-                <a href="#stats">통계 현황</a>
                 <a href="#rules">학원규정</a>
+                <a href="#stats">통계 현황</a>
                 <a href="#penalty">반별벌점현황</a>
             </div>
             <div class="nav-right" id="navRight">
@@ -981,9 +981,9 @@
     <div class="mobile-nav" id="mobileNav">
         <a href="#notice" onclick="closeNav()">공지사항</a>
         <a href="#weekly" onclick="closeNav()">주간공지</a>
+        <a href="#rules" onclick="closeNav()">학원규정</a>
         <a href="#stats" onclick="closeNav()">통계 현황</a>
         <a href="#penalty" onclick="closeNav()">반별벌점현황</a>
-        <a href="#rules" onclick="closeNav()">학원규정</a>
         <div id="mobileNavGuest">
             <a href="#" class="nav-pill" onclick="openLoginModal(event);closeNav()">로그인</a>
         </div>
@@ -1020,17 +1020,6 @@
                 </div>
             </div>
         </div>
-        <div class="va-panel" style="--va-color:#16a34a;--va-comp:#a3166f;--va-img:url('img/statistics.jpg')">
-            <div class="va-bar">
-                <div class="va-vtitle">통계현황</div>
-            </div>
-            <div class="va-content">
-                <div class="va-desc">
-                    <p>벌점 및 반별 통계 현황을 확인하세요.</p>
-                    <a href="#stats" class="va-go">바로가기 →</a>
-                </div>
-            </div>
-        </div>
         <div class="va-panel" style="--va-color:#7c3aed;--va-comp:#abed3a;--va-img:url('img/rules.jpg')">
             <div class="va-bar">
                 <div class="va-vtitle">학원규정</div>
@@ -1039,6 +1028,17 @@
                 <div class="va-desc">
                     <p>학원 생활·학습 규정을 조회하세요.</p>
                     <a href="#rules" class="va-go">바로가기 →</a>
+                </div>
+            </div>
+        </div>
+        <div class="va-panel" style="--va-color:#16a34a;--va-comp:#a3166f;--va-img:url('img/statistics.jpg')">
+            <div class="va-bar">
+                <div class="va-vtitle">통계현황</div>
+            </div>
+            <div class="va-content">
+                <div class="va-desc">
+                    <p>벌점 및 반별 통계 현황을 확인하세요.</p>
+                    <a href="#stats" class="va-go">바로가기 →</a>
                 </div>
             </div>
         </div>
@@ -1373,11 +1373,13 @@ async function doStudentLogin() {
     sessionStorage.setItem('std_name',    r.student_name || '');
     sessionStorage.setItem('std_ban',     r.student_ban || '');
     sessionStorage.setItem('std_prt',     r.student_prt || '');
+    sessionStorage.setItem('std_expires', Date.now() + 15 * 60 * 1000);
 
     // 최초 로그인(temp 세션) → 비밀번호 변경 강제
     if (r.is_first_login === 'Y') { showChangePwForm(); return; }
 
     updateNavLoggedIn(studentDisplayName(), false);
+    startSessionTimer();
     closeLoginModal();
 }
 
@@ -1454,6 +1456,20 @@ function clearStudentSession() {
     sessionStorage.removeItem('std_name');
     sessionStorage.removeItem('std_ban');
     sessionStorage.removeItem('std_prt');
+    sessionStorage.removeItem('std_expires');
+}
+
+var _sessionTimer = null;
+function startSessionTimer() {
+    if (_sessionTimer) clearTimeout(_sessionTimer);
+    var expires = parseInt(sessionStorage.getItem('std_expires'), 10);
+    if (!expires) return;
+    var remaining = expires - Date.now();
+    if (remaining <= 0) { clearStudentSession(); updateNavGuest(); return; }
+    _sessionTimer = setTimeout(function() {
+        clearStudentSession();
+        updateNavGuest();
+    }, remaining);
 }
 // 상단 표시: '[학번] 반그룹 - 이름'
 function studentDisplayName() {
@@ -1500,20 +1516,13 @@ function updateNavGuest() {
     if (!r || !r.valid) { clearStudentSession(); applyAccess(); return; }
     if (r.role === 'temp') { showChangePwForm(); return; }
     updateNavLoggedIn(studentDisplayName(), false);
+    startSessionTimer();  // 새로고침 후에도 남은 시간 기준 타이머 재시작
 })();
 
 // 관리자 로그아웃 감지 — admin.html에서 localStorage 삭제 시 즉시 guest 전환
 window.addEventListener('storage', function(e) {
     if (e.key === 'adm_id' && !e.newValue) applyAccess();
 });
-
-// 학생 세션 만료 폴링 — 15분마다 validate_session 확인 → 만료 시 guest 전환
-setInterval(async function() {
-    var sess = sessionStorage.getItem('std_session');
-    if (!sess) return;
-    var r = await callRpc('validate_session', { p_session_id: sess });
-    if (!r || !r.valid) { clearStudentSession(); updateNavGuest(); }
-}, 15 * 60 * 1000);
 
 // Enter 키 — input 포커스 상태에서만
 document.addEventListener('keydown', function(e) {
