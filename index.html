@@ -1491,6 +1491,19 @@ function updateNavGuest() {
     updateNavLoggedIn(studentDisplayName(), false);
 })();
 
+// 관리자 로그아웃 감지 — admin.html에서 localStorage 삭제 시 즉시 guest 전환
+window.addEventListener('storage', function(e) {
+    if (e.key === 'adm_id' && !e.newValue) applyAccess();
+});
+
+// 학생 세션 만료 폴링 — 15분마다 validate_session 확인 → 만료 시 guest 전환
+setInterval(async function() {
+    var sess = sessionStorage.getItem('std_session');
+    if (!sess) return;
+    var r = await callRpc('validate_session', { p_session_id: sess });
+    if (!r || !r.valid) { clearStudentSession(); updateNavGuest(); }
+}, 15 * 60 * 1000);
+
 // Enter 키 — input 포커스 상태에서만
 document.addEventListener('keydown', function(e) {
     if (e.key !== 'Enter') return;

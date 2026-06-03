@@ -119,7 +119,7 @@ BEGIN
     v_expires := now() + interval '30 minutes';
   ELSE
     v_role    := 'active';
-    v_expires := now() + interval '2 hours';
+    v_expires := now() + interval '15 minutes';
   END IF;
 
   -- 3) 신규 세션 발급
