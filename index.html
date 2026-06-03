@@ -984,7 +984,13 @@
         <a href="#stats" onclick="closeNav()">통계 현황</a>
         <a href="#penalty" onclick="closeNav()">반별벌점현황</a>
         <a href="#rules" onclick="closeNav()">학원규정</a>
-        <a href="#" class="nav-pill" onclick="openLoginModal(event);closeNav()">로그인</a>
+        <div id="mobileNavGuest">
+            <a href="#" class="nav-pill" onclick="openLoginModal(event);closeNav()">로그인</a>
+        </div>
+        <div id="mobileNavLoggedIn" style="display:none;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:1px solid rgba(255,255,255,0.07);">
+            <span id="mobileNavUserName" style="font-size:13px;color:#fff;"></span>
+            <a href="#" onclick="doLogout();closeNav()" style="font-size:11px;color:#fff;border:1px solid rgba(255,255,255,0.5);border-radius:9999px;padding:4px 12px;text-decoration:none;white-space:nowrap;flex-shrink:0;">로그아웃</a>
+        </div>
     </div>
 </header>
 
@@ -1472,11 +1478,16 @@ function updateNavLoggedIn(displayName, isAdmin) {
     document.getElementById('navLoggedIn').style.display = 'flex';
     document.getElementById('navUserName').textContent = displayName;
     document.getElementById('navAdminLink').style.display = isAdmin ? 'inline' : 'none';
+    document.getElementById('mobileNavGuest').style.display = 'none';
+    document.getElementById('mobileNavLoggedIn').style.display = 'flex';
+    document.getElementById('mobileNavUserName').textContent = displayName;
     applyAccess();
 }
 function updateNavGuest() {
     document.getElementById('navLoggedIn').style.display = 'none';
     document.getElementById('navGuest').style.display = 'block';
+    document.getElementById('mobileNavLoggedIn').style.display = 'none';
+    document.getElementById('mobileNavGuest').style.display = 'block';
     applyAccess();
 }
 
@@ -1648,6 +1659,11 @@ window.addEventListener('load', function() { loadNotices(); });
     function closeNav() {
         document.getElementById('mobileNav').style.display = 'none';
     }
+
+    // PC 사이즈로 복귀 시 모바일 메뉴 자동 닫기
+    window.addEventListener('resize', function() {
+        if (window.innerWidth > 833) closeNav();
+    });
 </script>
 
 </body>
