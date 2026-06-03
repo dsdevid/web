@@ -1164,7 +1164,7 @@
             </div>
 
             <!-- Stats Summary -->
-            <div class="u-card">
+            <div class="u-card" id="penalty">
                 <div class="u-card-head">
                     <span class="u-title">반별 벌점 현황</span>
                     <a href="#stats" class="u-more">상세</a>
@@ -1208,12 +1208,12 @@
         <!-- 학생 로그인 -->
         <div id="formGeneral">
             <div class="modal-title">학생 로그인</div>
-            <div class="modal-sub">학번과 이름을 입력하세요</div>
+            <div class="modal-sub">학번과 비밀번호를 입력하세요</div>
             <div class="modal-field">
-                <input type="text" id="genId"   class="modal-input" placeholder="학번 (예: 2501)" maxlength="10">
+                <input type="text"     id="genId" class="modal-input" placeholder="학번 (예: 2501)" maxlength="10" autocomplete="username">
             </div>
             <div class="modal-field">
-                <input type="text" id="genName" class="modal-input" placeholder="이름" maxlength="20">
+                <input type="password" id="genPw" class="modal-input" placeholder="비밀번호" maxlength="100" autocomplete="current-password">
             </div>
             <button class="modal-btn" id="btnGenLogin" onclick="doStudentLogin()">로그인</button>
         </div>
@@ -1231,6 +1231,19 @@
             <button class="modal-btn" id="btnAdmLogin" onclick="doAdminLogin()">로그인</button>
         </div>
 
+        <!-- 최초 비밀번호 변경 -->
+        <div id="formChangePw" style="display:none">
+            <div class="modal-title">비밀번호 변경</div>
+            <div class="modal-sub">최초 로그인입니다. 새 비밀번호를 설정하세요</div>
+            <div class="modal-field">
+                <input type="password" id="newPw"  class="modal-input" placeholder="새 비밀번호" maxlength="100" autocomplete="new-password">
+            </div>
+            <div class="modal-field">
+                <input type="password" id="newPw2" class="modal-input" placeholder="새 비밀번호 확인" maxlength="100" autocomplete="new-password">
+            </div>
+            <button class="modal-btn" id="btnChangePw" onclick="completeFirstLogin()">변경 후 재로그인</button>
+        </div>
+
         <div class="modal-error"    id="modalError"></div>
         <div class="modal-spin-wrap" id="modalSpinner">
             <div class="m-spin"></div><span>확인 중...</span>
@@ -1244,6 +1257,7 @@
     </div>
 </footer>
 
+<script src="pages.js"></script>
 <script>
 // ══════════════════════════════════════════════
 // Supabase 설정 (anon key — 브라우저 공개용)
@@ -1274,9 +1288,11 @@ var _loginTab = 'general';
 
 function openLoginModal(e) {
     if (e) e.preventDefault();
+    document.getElementById('formChangePw').style.display = 'none';
+    document.querySelector('#loginModal .modal-tabs').style.display = '';
+    switchLoginTab('general');
     document.getElementById('loginModal').style.display = 'flex';
     document.body.style.overflow = 'hidden';
-    clearModalState();
 }
 function closeLoginModal() {
     document.getElementById('loginModal').style.display = 'none';
@@ -1312,23 +1328,72 @@ function setModalLoading(on, btnId) {
 // 학생 로그인
 // ─────────────────────────────────────────────
 async function doStudentLogin() {
-    var sid  = document.getElementById('genId').value.trim();
-    var name = document.getElementById('genName').value.trim();
-    if (!sid || !name) { showModalError('학번과 이름을 입력하세요'); return; }
+    var sid = document.getElementById('genId').value.trim();
+    var pw  = document.getElementById('genPw').value;
+    if (!sid || !pw) { showModalError('학번과 비밀번호를 입력하세요'); return; }
 
     setModalLoading(true, 'btnGenLogin');
-    var r = await callRpc('process_student_login', { p_student_id: sid, p_student_name: name });
+    var r = await callRpc('process_student_login', { p_student_id: sid, p_password: pw });
     setModalLoading(false, 'btnGenLogin');
 
     if (!r || !r.success) {
-        showModalError(!r ? '서버 오류' : r.error === 'NOT_FOUND' ? '학번 또는 이름이 올바르지 않습니다' : '로그인 실패');
+        var msgs = { NOT_FOUND:'학번을 찾을 수 없습니다', WRONG_PASSWORD:'비밀번호가 올바르지 않습니다',
+                     NO_PASSWORD:'비밀번호가 설정되지 않았습니다. 관리자에게 문의하세요',
+                     LOCKED:'5회 실패로 잠겼습니다. 30분 후 다시 시도하세요' };
+        showModalError(!r ? '서버 오류' : (msgs[r.error] || '로그인 실패'));
+        document.getElementById('genPw').value = '';
         return;
     }
-    sessionStorage.setItem('std_id',   r.student_id);
-    sessionStorage.setItem('std_name', r.student_name);
-    sessionStorage.setItem('std_ban',  r.student_ban || '');
-    updateNavLoggedIn(r.student_name + '님', false);
+
+    sessionStorage.setItem('std_session', r.session_id);
+    sessionStorage.setItem('std_id',      r.student_id);
+    sessionStorage.setItem('std_name',    r.student_name || '');
+    sessionStorage.setItem('std_ban',     r.student_ban || '');
+    sessionStorage.setItem('std_prt',     r.student_prt || '');
+
+    // 최초 로그인(temp 세션) → 비밀번호 변경 강제
+    if (r.is_first_login === 'Y') { showChangePwForm(); return; }
+
+    updateNavLoggedIn(studentDisplayName(), false);
     closeLoginModal();
+}
+
+// ─────────────────────────────────────────────
+// 최초 비밀번호 변경
+// ─────────────────────────────────────────────
+function showChangePwForm() {
+    document.getElementById('formGeneral').style.display  = 'none';
+    document.getElementById('formAdmin').style.display    = 'none';
+    document.getElementById('formChangePw').style.display = 'block';
+    document.querySelector('#loginModal .modal-tabs').style.display = 'none';
+    document.getElementById('loginModal').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    clearModalState();
+}
+
+async function completeFirstLogin() {
+    var p1   = document.getElementById('newPw').value;
+    var p2   = document.getElementById('newPw2').value;
+    var sess = sessionStorage.getItem('std_session');
+    if (!p1 || p1.length < 4) { showModalError('비밀번호는 4자 이상 입력하세요'); return; }
+    if (p1 !== p2)            { showModalError('비밀번호가 일치하지 않습니다'); return; }
+    if (!sess)               { showModalError('세션이 만료되었습니다. 다시 로그인하세요'); return; }
+
+    setModalLoading(true, 'btnChangePw');
+    var r = await callRpc('complete_first_login', { p_session_id: sess, p_new_password: p1 });
+    setModalLoading(false, 'btnChangePw');
+
+    if (!r || !r.success) { showModalError('변경 실패. 다시 로그인 후 시도하세요'); return; }
+
+    // temp 세션은 서버에서 삭제됨 → 새 비밀번호로 재로그인 유도
+    clearStudentSession();
+    alert('비밀번호가 변경되었습니다. 새 비밀번호로 다시 로그인하세요.');
+    document.getElementById('newPw').value  = '';
+    document.getElementById('newPw2').value = '';
+    document.getElementById('genPw').value  = '';
+    document.getElementById('formChangePw').style.display = 'none';
+    document.querySelector('#loginModal .modal-tabs').style.display = '';
+    switchLoginTab('general');
 }
 
 // ─────────────────────────────────────────────
@@ -1360,10 +1425,25 @@ async function doAdminLogin() {
 // ─────────────────────────────────────────────
 // 로그아웃
 // ─────────────────────────────────────────────
-function doLogout() {
+function clearStudentSession() {
+    sessionStorage.removeItem('std_session');
     sessionStorage.removeItem('std_id');
     sessionStorage.removeItem('std_name');
     sessionStorage.removeItem('std_ban');
+    sessionStorage.removeItem('std_prt');
+}
+// 상단 표시: '[학번] 반그룹 - 이름'
+function studentDisplayName() {
+    var id  = sessionStorage.getItem('std_id')   || '';
+    var ban = sessionStorage.getItem('std_ban')  || '';
+    var prt = sessionStorage.getItem('std_prt')  || '';
+    var nm  = sessionStorage.getItem('std_name') || '';
+    return '[' + id + '] ' + ban + prt + ' - ' + nm;
+}
+async function doLogout() {
+    var sess = sessionStorage.getItem('std_session');
+    if (sess) await callRpc('logout_session', { p_session_id: sess });
+    clearStudentSession();
     updateNavGuest();
 }
 
@@ -1375,16 +1455,23 @@ function updateNavLoggedIn(displayName, isAdmin) {
     document.getElementById('navLoggedIn').style.display = 'flex';
     document.getElementById('navUserName').textContent = displayName;
     document.getElementById('navAdminLink').style.display = isAdmin ? 'inline' : 'none';
+    applyAccess();
 }
 function updateNavGuest() {
     document.getElementById('navLoggedIn').style.display = 'none';
     document.getElementById('navGuest').style.display = 'block';
+    applyAccess();
 }
 
-// 페이지 로드 — 학생 세션만 복원
-(function() {
-    var stdName = sessionStorage.getItem('std_name');
-    if (stdName) updateNavLoggedIn(stdName + '님', false);
+// 페이지 로드 — 권한 적용 + 학생 세션 검증 후 복원
+(async function() {
+    applyAccess();
+    var sess = sessionStorage.getItem('std_session');
+    if (!sess) return;
+    var r = await callRpc('validate_session', { p_session_id: sess });
+    if (!r || !r.valid) { clearStudentSession(); applyAccess(); return; }
+    if (r.role === 'temp') { showChangePwForm(); return; }
+    updateNavLoggedIn(studentDisplayName(), false);
 })();
 
 // Enter 키 — input 포커스 상태에서만
@@ -1394,6 +1481,7 @@ document.addEventListener('keydown', function(e) {
     if (!modal || modal.style.display === 'none') return;
     if ((document.activeElement && document.activeElement.tagName) !== 'INPUT') return;
     e.preventDefault();
+    if (document.getElementById('formChangePw').style.display !== 'none') { completeFirstLogin(); return; }
     if (_loginTab === 'general') doStudentLogin(); else doAdminLogin();
 });
 </script>
