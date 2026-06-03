@@ -1463,13 +1463,12 @@ var _sessionTimer = null;
 function startSessionTimer() {
     if (_sessionTimer) clearTimeout(_sessionTimer);
     var expires = parseInt(sessionStorage.getItem('std_expires'), 10);
-    if (!expires) return;
-    var remaining = expires - Date.now();
-    if (remaining <= 0) { clearStudentSession(); updateNavGuest(); return; }
+    // expires 없음(배포 전 로그인) 또는 만료 → 즉시 로그아웃
+    if (!expires || expires <= Date.now()) { clearStudentSession(); updateNavGuest(); return; }
     _sessionTimer = setTimeout(function() {
         clearStudentSession();
         updateNavGuest();
-    }, remaining);
+    }, expires - Date.now());
 }
 // 상단 표시: '[학번] 반그룹 - 이름'
 function studentDisplayName() {
