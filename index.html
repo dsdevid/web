@@ -255,15 +255,18 @@
             .va-bar {
                 flex-direction: row;
                 width: auto;
-                gap: 14px;
-                padding: 16px 20px;
+                gap: 10px;
+                padding: 10px 16px;
                 justify-content: flex-start;
             }
-            .va-vtitle { writing-mode: horizontal-tb; transform: none; letter-spacing: -0.224px; border-right: none; padding-right: 0; }
+            .va-vtitle { writing-mode: horizontal-tb; transform: none; letter-spacing: -0.224px; border-right: none; padding-right: 0; font-size: 21px; }
             .va-vtitle::after { display: none; }
             .va-new { position: static; transform: none; }
-            .va-content { display: none; padding: 0 20px 24px; }
-            .va-panel.va-open .va-content { display: flex; opacity: 1; }
+            .va-panel { flex-direction: column; }
+            .va-content { display: none; padding: 10px 16px 20px; }
+            .va-panel.va-open .va-content { display: block; opacity: 1; }
+            .va-panel.va-open .va-go { position: absolute; top: 10px; right: 16px; font-size: 13px; }
+            .va-panel.va-open .va-desc p { margin: 0; }
         }
 
         .btn-pill {
