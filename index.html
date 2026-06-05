@@ -1580,13 +1580,14 @@ function renderNoticeRows(ul, rows) {
     }).join('');
 }
 
-function handleNoticeClick(e) {
+async function handleNoticeClick(e) {
     e.preventDefault();
     var row = e.target.closest('.n-row');
     if (!row) return;
     var id = parseInt(row.dataset.id);
+    await loadNotices();  // 최신화 — 관리자 삭제/수정/비공개 반영
     var n = _notices.find(function(x) { return x.textnotice_id === id; });
-    if (!n) return;
+    if (!n) { alert('삭제되었거나 비공개된 공지입니다.'); return; }
     openNoticeDetail(id, n.textnotice_title, n.textnotice_body,
                      n.textnotice_date, n.textnotice_owner, n.textnotice_readcnt);
 }
