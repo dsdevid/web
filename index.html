@@ -1493,7 +1493,7 @@ function startSessionHeartbeat() {
     _heartbeat = setInterval(revalidateSession, 30000);  // 30초
 }
 document.addEventListener('visibilitychange', function() {
-    if (document.visibilityState === 'visible') revalidateSession();
+    if (document.visibilityState === 'visible') { revalidateSession(); loadNotices(); }
 });
 // 상단 표시: '[학번] 반그룹 - 이름'
 function studentDisplayName() {
@@ -1596,7 +1596,9 @@ function renderNoticeRows(ul, rows) {
         var d = r.textnotice_date ? r.textnotice_date.substring(2,10).replace(/-/g,'.') : '';
         var badge = r.textnotice_pin
             ? '<span class="n-badge n-pin">고정</span>'
-            : '<span class="n-badge n-gen">일반</span>';
+            : isToday(r.textnotice_date)
+                ? '<span class="n-badge n-new">신규</span>'
+                : '<span class="n-badge n-gen">일반</span>';
         return '<li><a href="#" class="n-row" data-id="' + r.textnotice_id + '">' +
                badge + '<span class="n-title">' + esc(r.textnotice_title||'') + '</span>' +
                '<span class="n-date">' + d + '</span></a></li>';
