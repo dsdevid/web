@@ -1585,9 +1585,13 @@ async function handleNoticeClick(e) {
     var row = e.target.closest('.n-row');
     if (!row) return;
     var id = parseInt(row.dataset.id);
-    await loadNotices();  // 최신화 — 관리자 삭제/수정/비공개 반영
-    var n = _notices.find(function(x) { return x.textnotice_id === id; });
-    if (!n) { alert('삭제되었거나 비공개된 공지입니다.'); return; }
+    // 클릭 시 서버에서 본문 1건 조회 (목록은 메타만 보유)
+    var n = await callRpc('get_notice_detail', { p_id: id });
+    if (!n) {                       // 삭제/비공개 → 안내 + 목록 갱신
+        alert('삭제된 공지입니다.');
+        await loadNotices();
+        return;
+    }
     openNoticeDetail(id, n.textnotice_title, n.textnotice_body,
                      n.textnotice_date, n.textnotice_owner, n.textnotice_readcnt);
 }

@@ -111,19 +111,34 @@ DROP FUNCTION IF EXISTS process_student_login(text, text);
 ALTER TABLE user_textnotice
   ADD COLUMN IF NOT EXISTS textnotice_pin boolean NOT NULL DEFAULT false;
 
--- 공개 공지 조회 (anon — 비공개 제외, 고정 우선)
+-- 공개 공지 "목록" 조회 (anon — 메타만, 본문 제외, 최신 100건, 고정 우선)
 CREATE OR REPLACE FUNCTION get_notices_public()
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER AS $$
 BEGIN
   RETURN (SELECT COALESCE(jsonb_agg(n), '[]'::jsonb) FROM (
-    SELECT textnotice_id, textnotice_date, textnotice_owner,
-           textnotice_title, textnotice_body, textnotice_readcnt, textnotice_pin
+    SELECT textnotice_id, textnotice_date, textnotice_title, textnotice_pin
     FROM user_textnotice
     WHERE textnotice_hidden = false
     ORDER BY textnotice_pin DESC, textnotice_date DESC
+    LIMIT 100
   ) n);
 END;$$;
 GRANT EXECUTE ON FUNCTION get_notices_public() TO anon;
+
+-- 공개 공지 "상세" 1건 조회 (anon — 클릭 시 본문 로드, 없거나 비공개면 null)
+CREATE OR REPLACE FUNCTION get_notice_detail(p_id integer)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE r jsonb;
+BEGIN
+  SELECT to_jsonb(n) INTO r FROM (
+    SELECT textnotice_id, textnotice_date, textnotice_owner,
+           textnotice_title, textnotice_body, textnotice_readcnt
+    FROM user_textnotice
+    WHERE textnotice_id = p_id AND textnotice_hidden = false
+  ) n;
+  RETURN r;  -- 없으면 null
+END;$$;
+GRANT EXECUTE ON FUNCTION get_notice_detail(integer) TO anon;
 
 -- 관리자 공지 조회 (전체, 숨김 포함)
 DROP FUNCTION IF EXISTS get_notices_admin(text);
