@@ -1113,13 +1113,6 @@
                             <div class="w-meta">2025.05.05 · 조회 489</div>
                         </div>
                     </a></li>
-                    <li><a href="#" class="w-row">
-                        <div class="w-num">18</div>
-                        <div class="w-info">
-                            <div class="w-title">2025년 4월 4주차 주간공지</div>
-                            <div class="w-meta">2025.04.28 · 조회 521</div>
-                        </div>
-                    </a></li>
                 </ul>
             </div>
 
@@ -1659,6 +1652,16 @@ function esc(s) {
 
 // 페이지 로드 시 공지사항 로드
 window.addEventListener('load', function() { loadNotices(); });
+
+// 주간공지 카드 높이를 학원규정 카드와 같게 (데스크톱 2열일 때만)
+function syncWeeklyHeight() {
+    var weekly = document.getElementById('weekly');
+    var rules  = document.getElementById('rules');
+    if (!weekly || !rules) return;
+    weekly.style.minHeight = (window.innerWidth > 1024) ? rules.offsetHeight + 'px' : '';
+}
+window.addEventListener('load', syncWeeklyHeight);
+window.addEventListener('resize', syncWeeklyHeight);
 </script>
 <script>
     // 세로 아코디언 패널 토글
