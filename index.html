@@ -202,11 +202,15 @@
             width: 6px;
             background: var(--va-comp, var(--va-color));
         }
+        @keyframes va-new-pulse {
+            0%   { transform: translateX(-50%) rotate(-7deg) scale(1);    opacity: 1; }
+            50%  { transform: translateX(-50%) rotate(-7deg) scale(1.15); opacity: 0.75; }
+            100% { transform: translateX(-50%) rotate(-7deg) scale(1);    opacity: 1; }
+        }
         .va-new {
             position: absolute;
             top: 56px;
             left: 30px;
-            transform: translateX(-50%) rotate(-7deg);
             background: #fff;
             color: #d93025;
             font-size: 10px;
@@ -215,6 +219,7 @@
             padding: 3px 9px;
             border-radius: 9999px;
             box-shadow: 0 2px 7px rgba(0,0,0,0.28);
+            animation: va-new-pulse 1.4s ease-in-out infinite;
         }
         .va-content {
             flex: 1;
@@ -262,7 +267,12 @@
             }
             .va-vtitle { writing-mode: horizontal-tb; transform: none; letter-spacing: -0.224px; border-right: none; padding-right: 0; font-size: 21px; }
             .va-vtitle::after { display: none; }
-            .va-new { position: static; transform: none; }
+            .va-new { position: static; animation: va-new-pulse-mob 1.4s ease-in-out infinite; }
+            @keyframes va-new-pulse-mob {
+                0%   { transform: scale(1);    opacity: 1; }
+                50%  { transform: scale(1.15); opacity: 0.75; }
+                100% { transform: scale(1);    opacity: 1; }
+            }
             .va-panel { flex-direction: column; }
             .va-content { display: none; padding: 10px 16px 20px; }
             .va-panel.va-open .va-content { display: block; opacity: 1; }
