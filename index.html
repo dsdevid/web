@@ -1435,8 +1435,9 @@ async function doAdminLogin() {
     setModalLoading(false, 'btnAdmLogin');
 
     if (!r || !r.success) {
-        var msgs = { NOT_FOUND:'계정을 찾을 수 없습니다', WRONG_PASSWORD:'비밀번호가 올바르지 않습니다',
-                     LOCKED:'계정이 잠겼습니다', NO_PASSWORD:'비밀번호가 설정되지 않은 계정입니다' };
+        var msgs = { AUTH_FAILED:'아이디 또는 비밀번호가 올바르지 않습니다',
+                     LOCKED:'계정이 잠겼습니다',
+                     ALREADY_ACTIVE:'이미 다른 곳에서 접속 중입니다' };
         showModalError(msgs[r && r.error] || '로그인 실패');
         document.getElementById('admPw').value = '';
         return;
@@ -1444,6 +1445,7 @@ async function doAdminLogin() {
     localStorage.setItem('adm_id',    r.admin_id);
     localStorage.setItem('adm_name',  r.admin_name);
     localStorage.setItem('adm_super', r.admin_is_super_admin ? '1' : '0');
+    localStorage.setItem('adm_token', r.session_token);
     closeLoginModal();
     window.open('admin.html', 'dshw_admin', 'width=1280,height=900');
 }

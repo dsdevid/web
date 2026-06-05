@@ -306,8 +306,9 @@ $$;
 -- 3-6. admin_reset_student_password — 관리자가 학생 임시 비밀번호 개별 지정
 --   기존 admin RPC 패턴(p_admin_id 로 admin_master 확인) 동일.
 --   지정 후 mst_is_first_login='Y' → 학생 첫 로그인 시 변경 강제.
-CREATE OR REPLACE FUNCTION admin_reset_student_password(
-  p_admin_id      text,
+DROP FUNCTION IF EXISTS admin_reset_student_password(text, text, text);
+CREATE FUNCTION admin_reset_student_password(
+  p_session_token text,
   p_student_id    text,
   p_temp_password text
 ) RETURNS jsonb
@@ -318,8 +319,8 @@ DECLARE
   v_admin admin_master%ROWTYPE;
   v_users uuid;
 BEGIN
-  SELECT * INTO v_admin FROM admin_master WHERE admin_id = p_admin_id AND admin_status = 'active';
-  IF NOT FOUND THEN
+  v_admin := _admin_session(p_session_token);
+  IF v_admin.admin_id IS NULL THEN
     RETURN jsonb_build_object('success', false, 'error', 'UNAUTHORIZED');
   END IF;
 

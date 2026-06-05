@@ -30,9 +30,14 @@ CREATE TABLE IF NOT EXISTS admin_master (
   CONSTRAINT admin_master_email_uniq  UNIQUE (admin_email)
 );
 
+-- 세션 토큰 컬럼 (단일 세션 = 계정당 토큰 1개)
+ALTER TABLE admin_master
+  ADD COLUMN IF NOT EXISTS admin_session_token text;
+
 -- 인덱스 (로그인 시 email로 조회)
 CREATE INDEX IF NOT EXISTS idx_admin_email  ON admin_master (admin_email);
 CREATE INDEX IF NOT EXISTS idx_admin_status ON admin_master (admin_status);
+CREATE INDEX IF NOT EXISTS idx_admin_token  ON admin_master (admin_session_token);
 
 
 -- 3. 슈퍼관리자 최초 등록
@@ -90,34 +95,12 @@ FROM admin_master WHERE admin_id = 'super_admin_01';
 --    bcrypt 비교: crypt(입력값, 저장된_hash) = 저장된_hash
 -- ============================================================
 -- ============================================================
--- 7. 학생 로그인 RPC (user_master 테이블 생성 후 실행)
---    학번 + 이름으로 본인 확인
+-- 7. 학생 로그인 RPC
+--    ★ 무비밀번호(학번+이름) 버전 폐기 — supabase_user_auth.sql 의
+--      비밀번호(bcrypt) 버전 process_student_login(text,text,text) 사용.
+--      레거시 2-arg 가 남아 있으면 PII 열거 위험 → 명시적으로 제거.
 -- ============================================================
-CREATE OR REPLACE FUNCTION process_student_login(p_student_id text, p_student_name text)
-RETURNS jsonb
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-  v_student user_master%ROWTYPE;
-BEGIN
-  SELECT * INTO v_student
-  FROM user_master
-  WHERE mst_id = p_student_id AND mst_name = p_student_name;
-
-  IF NOT FOUND THEN
-    RETURN jsonb_build_object('success', false, 'error', 'NOT_FOUND');
-  END IF;
-
-  RETURN jsonb_build_object(
-    'success',      true,
-    'student_id',   v_student.mst_id,
-    'student_name', v_student.mst_name,
-    'student_ban',  v_student.mst_ban,
-    'student_prt',  v_student.mst_prt
-  );
-END;
-$$;
+DROP FUNCTION IF EXISTS process_student_login(text, text);
 
 
 -- ============================================================
@@ -143,12 +126,13 @@ END;$$;
 GRANT EXECUTE ON FUNCTION get_notices_public() TO anon;
 
 -- 관리자 공지 조회 (전체, 숨김 포함)
-CREATE OR REPLACE FUNCTION get_notices_admin(p_admin_id text)
+DROP FUNCTION IF EXISTS get_notices_admin(text);
+CREATE FUNCTION get_notices_admin(p_session_token text)
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE v admin_master%ROWTYPE;
 BEGIN
-  SELECT * INTO v FROM admin_master WHERE admin_id = p_admin_id AND admin_status = 'active';
-  IF NOT FOUND THEN RETURN jsonb_build_object('error','UNAUTHORIZED'); END IF;
+  v := _admin_session(p_session_token);
+  IF v.admin_id IS NULL THEN RETURN jsonb_build_object('error','UNAUTHORIZED'); END IF;
   RETURN (SELECT COALESCE(jsonb_agg(n), '[]'::jsonb) FROM (
     SELECT textnotice_id, textnotice_date, textnotice_owner,
            textnotice_title, textnotice_body, textnotice_readcnt,
@@ -170,15 +154,16 @@ END;$$;
 GRANT EXECUTE ON FUNCTION increment_notice_readcnt(integer) TO anon;
 
 -- 공지 등록/수정 (p_id=0이면 INSERT, 아니면 UPDATE)
-CREATE OR REPLACE FUNCTION save_notice(
-  p_admin_id text, p_id integer,
+DROP FUNCTION IF EXISTS save_notice(text,integer,text,text,text,boolean,boolean);
+CREATE FUNCTION save_notice(
+  p_session_token text, p_id integer,
   p_title text, p_body text, p_owner text,
   p_hidden boolean, p_pin boolean
 ) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE v admin_master%ROWTYPE; v_id integer;
 BEGIN
-  SELECT * INTO v FROM admin_master WHERE admin_id = p_admin_id AND admin_status = 'active';
-  IF NOT FOUND THEN RETURN jsonb_build_object('success',false,'error','UNAUTHORIZED'); END IF;
+  v := _admin_session(p_session_token);
+  IF v.admin_id IS NULL THEN RETURN jsonb_build_object('success',false,'error','UNAUTHORIZED'); END IF;
   IF p_id IS NULL OR p_id = 0 THEN
     INSERT INTO user_textnotice(textnotice_date,textnotice_owner,textnotice_title,
       textnotice_body,textnotice_readcnt,textnotice_hidden,textnotice_pin)
@@ -196,12 +181,13 @@ END;$$;
 GRANT EXECUTE ON FUNCTION save_notice(text,integer,text,text,text,boolean,boolean) TO anon;
 
 -- 공지 삭제
-CREATE OR REPLACE FUNCTION delete_notice(p_admin_id text, p_id integer)
+DROP FUNCTION IF EXISTS delete_notice(text,integer);
+CREATE FUNCTION delete_notice(p_session_token text, p_id integer)
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE v admin_master%ROWTYPE;
 BEGIN
-  SELECT * INTO v FROM admin_master WHERE admin_id = p_admin_id AND admin_status = 'active';
-  IF NOT FOUND THEN RETURN jsonb_build_object('success',false,'error','UNAUTHORIZED'); END IF;
+  v := _admin_session(p_session_token);
+  IF v.admin_id IS NULL THEN RETURN jsonb_build_object('success',false,'error','UNAUTHORIZED'); END IF;
   DELETE FROM user_textnotice WHERE textnotice_id = p_id;
   RETURN jsonb_build_object('success',true);
 END;$$;
@@ -213,7 +199,7 @@ GRANT EXECUTE ON FUNCTION delete_notice(text,integer) TO anon;
 --    Supabase Dashboard → Settings → API → anon public key 사용
 -- ============================================================
 GRANT EXECUTE ON FUNCTION process_admin_login(text, text)  TO anon;
-GRANT EXECUTE ON FUNCTION process_student_login(text, text) TO anon;
+-- process_student_login GRANT 은 supabase_user_auth.sql(비번 3-arg 버전)에서 부여
 
 -- user_textnotice: 게시된 공지만 anon 조회 허용
 ALTER TABLE user_textnotice ENABLE ROW LEVEL SECURITY;
@@ -226,7 +212,8 @@ CREATE POLICY "anon_read_published" ON user_textnotice
 -- 9. 관리자 대시보드 데이터 RPC
 --    admin_id 확인 후 대시보드 데이터 반환 (SECURITY DEFINER = RLS 우회)
 -- ============================================================
-CREATE OR REPLACE FUNCTION get_admin_dashboard_data(p_admin_id text)
+DROP FUNCTION IF EXISTS get_admin_dashboard_data(text);
+CREATE FUNCTION get_admin_dashboard_data(p_session_token text)
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -239,9 +226,8 @@ DECLARE
   v_adm_logs   jsonb;
   v_result     jsonb;
 BEGIN
-  SELECT * INTO v_admin FROM admin_master
-  WHERE admin_id = p_admin_id AND admin_status = 'active';
-  IF NOT FOUND THEN
+  v_admin := _admin_session(p_session_token);
+  IF v_admin.admin_id IS NULL THEN
     RETURN jsonb_build_object('error', 'UNAUTHORIZED');
   END IF;
 
@@ -285,12 +271,14 @@ SECURITY DEFINER
 AS $$
 DECLARE
   v_admin admin_master%ROWTYPE;
+  v_token text;
 BEGIN
   -- 계정 조회
   SELECT * INTO v_admin FROM admin_master WHERE admin_id = p_admin_id;
 
   IF NOT FOUND THEN
-    RETURN jsonb_build_object('success', false, 'error', 'NOT_FOUND');
+    -- 계정 열거 방지: 존재/비번오류/미설정/비활성 모두 동일 코드
+    RETURN jsonb_build_object('success', false, 'error', 'AUTH_FAILED');
   END IF;
 
   -- 잠금 확인 (자동 해제 포함)
@@ -308,12 +296,12 @@ BEGIN
   END IF;
 
   IF v_admin.admin_status = 'inactive' THEN
-    RETURN jsonb_build_object('success', false, 'error', 'INACTIVE');
+    RETURN jsonb_build_object('success', false, 'error', 'AUTH_FAILED');
   END IF;
 
   -- 비밀번호 미설정 확인
   IF v_admin.admin_passwd_hash IS NULL THEN
-    RETURN jsonb_build_object('success', false, 'error', 'NO_PASSWORD');
+    RETURN jsonb_build_object('success', false, 'error', 'AUTH_FAILED');
   END IF;
 
   -- 비밀번호 비교 (bcrypt: 복호화 불가, 재해싱 후 비교)
@@ -332,22 +320,96 @@ BEGIN
       END
     WHERE admin_id = p_admin_id;
 
-    RETURN jsonb_build_object('success', false, 'error', 'WRONG_PASSWORD');
+    RETURN jsonb_build_object('success', false, 'error', 'AUTH_FAILED');
   END IF;
 
-  -- 로그인 성공: 실패 카운트 초기화 + 마지막 로그인 갱신
+  -- 활성 세션 검사: 같은 계정이 이미 접속 중이면 신규 차단
+  IF v_admin.admin_session_expires_at IS NOT NULL
+     AND v_admin.admin_session_expires_at > now() THEN
+    RETURN jsonb_build_object('success', false, 'error', 'ALREADY_ACTIVE');
+  END IF;
+
+  -- 로그인 성공: 토큰 발급 + 실패 카운트 초기화 + 마지막 로그인 갱신
+  v_token := gen_random_uuid()::text;
   UPDATE admin_master
   SET
     admin_login_fail_count   = 0,
     admin_last_login_at      = now(),
-    admin_session_expires_at = now() + interval '30 minutes'
+    admin_session_token      = v_token,
+    admin_session_expires_at = now() + interval '6 minutes'
   WHERE admin_id = p_admin_id;
 
   RETURN jsonb_build_object(
     'success',              true,
+    'session_token',        v_token,
     'admin_id',             v_admin.admin_id,
     'admin_name',           v_admin.admin_name,
     'admin_is_super_admin', v_admin.admin_is_super_admin
   );
 END;
 $$;
+
+
+-- ============================================================
+-- 6-1. 관리자 세션 검증 (내부 전용 — anon 비공개)
+--   토큰 유효 + 미만료 + active → 만료시각 6분 슬라이딩 갱신 후 행 반환.
+--   무효 시 admin_id 가 NULL 인 빈 행 반환.
+-- ============================================================
+CREATE OR REPLACE FUNCTION _admin_session(p_session_token text)
+RETURNS admin_master
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE v admin_master%ROWTYPE;
+BEGIN
+  IF p_session_token IS NULL THEN RETURN v; END IF;
+  UPDATE admin_master
+  SET admin_session_expires_at = now() + interval '6 minutes'
+  WHERE admin_session_token = p_session_token
+    AND admin_session_expires_at > now()
+    AND admin_status = 'active'
+  RETURNING * INTO v;
+  RETURN v;
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION _admin_session(text) FROM PUBLIC, anon;
+
+
+-- ============================================================
+-- 6-2. 관리자 세션 연장 (활동 갱신) — 클라 활동 시 throttle 호출
+-- ============================================================
+DROP FUNCTION IF EXISTS touch_admin_session(text);
+CREATE FUNCTION touch_admin_session(p_session_token text)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE v admin_master%ROWTYPE;
+BEGIN
+  v := _admin_session(p_session_token);
+  RETURN jsonb_build_object('success', v.admin_id IS NOT NULL);
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION touch_admin_session(text) TO anon;
+
+
+-- ============================================================
+-- 6-3. 관리자 로그아웃 — 토큰 보유자만 자기 세션 해제
+-- ============================================================
+DROP FUNCTION IF EXISTS logout_admin_session(text);
+CREATE FUNCTION logout_admin_session(p_session_token text)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  UPDATE admin_master
+  SET admin_session_token = NULL, admin_session_expires_at = NULL
+  WHERE admin_session_token = p_session_token;
+  RETURN jsonb_build_object('success', FOUND);
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION logout_admin_session(text) TO anon;

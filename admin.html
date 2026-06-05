@@ -576,7 +576,7 @@ var _adminNotices = [];
 async function loadAdminNotices() {
   var adminId = getAdminId();
   if (!adminId) return;
-  var list = await callRpc('get_notices_admin', { p_admin_id: adminId });
+  var list = await callRpc('get_notices_admin', { p_session_token: getToken() });
   if (!Array.isArray(list)) return;
   _adminNotices = list;
   renderAdminNoticeTable(list);
@@ -642,7 +642,7 @@ async function saveNotice() {
   sp.className = 'spinner-wrap show';
 
   var r = await callRpc('save_notice', {
-    p_admin_id: getAdminId(), p_id: id,
+    p_session_token: getToken(), p_id: id,
     p_title: title, p_body: body, p_owner: owner,
     p_hidden: hidden, p_pin: pin
   });
@@ -655,7 +655,7 @@ async function saveNotice() {
 
 async function deleteNotice(id) {
   if (!confirm('삭제하시겠습니까?')) return;
-  var r = await callRpc('delete_notice', { p_admin_id: getAdminId(), p_id: id });
+  var r = await callRpc('delete_notice', { p_session_token: getToken(), p_id: id });
   if (r && r.success) loadAdminNotices();
   else alert('삭제 실패');
 }
@@ -671,32 +671,50 @@ function showEditError(msg) {
 const SESSION_KEY = 'adm_id';
 const SESSION_NAME = 'adm_name';
 const SESSION_SUPER = 'adm_super';
+const SESSION_TOKEN = 'adm_token';
 
 function getAdminId()    { return localStorage.getItem(SESSION_KEY); }
 function getAdminName()  { return localStorage.getItem(SESSION_NAME); }
+function getToken()      { return localStorage.getItem(SESSION_TOKEN); }
 function isSuperAdmin()  { return localStorage.getItem(SESSION_SUPER) === '1'; }
 
-function saveSession(adminId, name, isSuper) {
+function saveSession(adminId, name, isSuper, token) {
   localStorage.setItem(SESSION_KEY,   adminId);
   localStorage.setItem(SESSION_NAME,  name);
   localStorage.setItem(SESSION_SUPER, isSuper ? '1' : '0');
+  localStorage.setItem(SESSION_TOKEN, token);
 }
 
 function clearSession() {
   localStorage.removeItem(SESSION_KEY);
   localStorage.removeItem(SESSION_NAME);
   localStorage.removeItem(SESSION_SUPER);
+  localStorage.removeItem(SESSION_TOKEN);
 }
 
 // ─────────────────────────────────────────────
 // 5분 무활동 자동 로그아웃
 // ─────────────────────────────────────────────
 const IDLE_TIMEOUT = 5 * 60 * 1000; // 5분
+const TOUCH_THROTTLE = 60 * 1000;   // 서버 세션 연장 최소 간격 1분
 var _idleTimer = null;
+var _lastTouch = 0;
+
+function touchSession() {
+  const token = getToken();
+  if (!token) return;
+  const t = new Date().getTime();
+  if (t - _lastTouch < TOUCH_THROTTLE) return;
+  _lastTouch = t;
+  callRpc('touch_admin_session', { p_session_token: token });
+}
 
 function resetIdleTimer() {
+  touchSession();
   clearTimeout(_idleTimer);
   _idleTimer = setTimeout(function() {
+    const token = getToken();
+    if (token) callRpc('logout_admin_session', { p_session_token: token });
     clearSession();
     alert('5분 동안 활동이 없어 자동 로그아웃되었습니다.');
     showLoginView();
@@ -714,11 +732,11 @@ function startIdleTimer() {
 // 페이지 로드: 세션 있으면 대시보드 즉시 로드
 // ─────────────────────────────────────────────
 window.addEventListener('load', async function() {
-  const adminId = getAdminId();
-  if (!adminId) return; // 로그인 폼 유지
+  const token = getToken();
+  if (!token) return; // 로그인 폼 유지
 
   showLoginLoading(true);
-  const data = await callRpc('get_admin_dashboard_data', { p_admin_id: adminId });
+  const data = await callRpc('get_admin_dashboard_data', { p_session_token: token });
   showLoginLoading(false);
 
   // 네트워크 오류(null)는 세션 유지, 명시적 인증 실패만 로그아웃
@@ -744,18 +762,19 @@ async function doLogin() {
   const login = await callRpc('process_admin_login', { p_admin_id: adminId, p_password: password });
   if (!login || !login.success) {
     showLoginLoading(false);
-    const msgs = { NOT_FOUND:'계정을 찾을 수 없습니다', WRONG_PASSWORD:'비밀번호가 올바르지 않습니다',
-                   LOCKED:'계정이 잠겼습니다', NO_PASSWORD:'비밀번호가 설정되지 않았습니다' };
+    const msgs = { AUTH_FAILED:'아이디 또는 비밀번호가 올바르지 않습니다',
+                   LOCKED:'계정이 잠겼습니다',
+                   ALREADY_ACTIVE:'이미 다른 곳에서 접속 중입니다' };
     showLoginError(msgs[login && login.error] || '로그인 실패');
     document.getElementById('inputPw').value = '';
     return;
   }
 
-  saveSession(login.admin_id, login.admin_name, login.admin_is_super_admin);
+  saveSession(login.admin_id, login.admin_name, login.admin_is_super_admin, login.session_token);
   document.getElementById('inputPw').value = '';
 
   // 2. 대시보드 데이터 로드
-  const data = await callRpc('get_admin_dashboard_data', { p_admin_id: login.admin_id });
+  const data = await callRpc('get_admin_dashboard_data', { p_session_token: getToken() });
   showLoginLoading(false);
 
   if (!data || data.error) { showLoginError('대시보드 로드 실패'); return; }
@@ -774,8 +793,10 @@ document.addEventListener('keydown', function(e) {
 // ─────────────────────────────────────────────
 // 로그아웃
 // ─────────────────────────────────────────────
-function doLogout() {
+async function doLogout() {
   if (!confirm('로그아웃 하시겠습니까?')) return;
+  const token = getToken();
+  if (token) await callRpc('logout_admin_session', { p_session_token: token });
   clearSession();
   window.close();
 }
