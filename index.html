@@ -203,21 +203,22 @@
             background: var(--va-comp, var(--va-color));
         }
         @keyframes va-new-pulse {
-            0%   { transform: translateX(-50%) rotate(-7deg) scale(1);    opacity: 1; }
-            50%  { transform: translateX(-50%) rotate(-7deg) scale(1.12); opacity: 0.78; }
-            100% { transform: translateX(-50%) rotate(-7deg) scale(1);    opacity: 1; }
+            0%   { transform: translateX(-50%) scale(1);    opacity: 1; }
+            50%  { transform: translateX(-50%) scale(1.12); opacity: 0.78; }
+            100% { transform: translateX(-50%) scale(1);    opacity: 1; }
         }
         .va-new {
             position: absolute;
             top: 54px;
-            left: 38px;
+            left: 44px;
             background: #d93025;
             color: #fff;
             font-size: 10px;
             font-weight: 700;
             letter-spacing: 0.5px;
-            padding: 4px 10px 4px 15px;
-            clip-path: polygon(11px 0, 100% 0, 100% 100%, 11px 100%, 0 50%);
+            padding: 4px 18px 4px 10px;
+            text-align: center;
+            clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 50%, 100% 100%, 0 100%);
             filter: drop-shadow(0 2px 5px rgba(0,0,0,0.35));
             animation: va-new-pulse 1.4s ease-in-out infinite;
         }
@@ -269,7 +270,8 @@
             .va-vtitle::after { display: none; }
             .va-new {
                 position: static;
-                clip-path: polygon(11px 0, 100% 0, 100% 100%, 11px 100%, 0 50%);
+                clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 50%, 100% 100%, 0 100%);
+                text-align: center;
                 animation: va-new-pulse-mob 1.4s ease-in-out infinite;
             }
             @keyframes va-new-pulse-mob {
