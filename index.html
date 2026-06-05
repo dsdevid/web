@@ -1381,6 +1381,7 @@ async function doStudentLogin() {
 
     updateNavLoggedIn(studentDisplayName(), false);
     startSessionTimer();
+    startSessionHeartbeat();
     closeLoginModal();
 }
 
@@ -1473,6 +1474,27 @@ function startSessionTimer() {
         updateNavGuest();
     }, expires - Date.now());
 }
+
+// 세션 무효 감지 (다른 기기서 재로그인 시 기존 기기 끊기)
+//   서버 푸시 없으므로 주기적 + 탭 복귀 시 validate_session 재확인.
+var _heartbeat = null;
+async function revalidateSession() {
+    var sess = sessionStorage.getItem('std_session');
+    if (!sess) { if (_heartbeat) { clearInterval(_heartbeat); _heartbeat = null; } return; }
+    var r = await callRpc('validate_session', { p_session_id: sess });
+    if (r && !r.valid) {  // 명시적 무효만 로그아웃 (네트워크 오류 r=null은 세션 유지)
+        clearStudentSession();
+        updateNavGuest();
+        if (_heartbeat) { clearInterval(_heartbeat); _heartbeat = null; }
+    }
+}
+function startSessionHeartbeat() {
+    if (_heartbeat) clearInterval(_heartbeat);
+    _heartbeat = setInterval(revalidateSession, 30000);  // 30초
+}
+document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible') revalidateSession();
+});
 // 상단 표시: '[학번] 반그룹 - 이름'
 function studentDisplayName() {
     var id  = sessionStorage.getItem('std_id')   || '';
@@ -1519,6 +1541,7 @@ function updateNavGuest() {
     if (r.role === 'temp') { showChangePwForm(); return; }
     updateNavLoggedIn(studentDisplayName(), false);
     startSessionTimer();  // 새로고침 후에도 남은 시간 기준 타이머 재시작
+    startSessionHeartbeat();
 })();
 
 // 관리자 로그아웃 감지 — admin.html에서 localStorage 삭제 시 즉시 guest 전환
