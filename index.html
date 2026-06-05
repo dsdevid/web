@@ -270,12 +270,10 @@
             .va-vtitle::after { display: none; }
             .va-new {
                 position: static;
-                order: 2;
                 clip-path: polygon(0 0, 100% 0, calc(100% - 8px) 50%, 100% 100%, 0 100%);
                 text-align: center;
                 animation: va-new-pulse-mob 1.4s ease-in-out infinite;
             }
-            .va-vtitle { order: 1; }
             @keyframes va-new-pulse-mob {
                 0%   { transform: scale(1);    opacity: 1; }
                 50%  { transform: scale(1.12); opacity: 0.78; }
@@ -1018,8 +1016,8 @@
     <div class="v-acc" id="vAcc">
         <div class="va-panel va-open" style="--va-color:#1d6fe8;--va-comp:#e8961d;--va-img:url('img/notice.jpg')">
             <div class="va-bar">
-                <span class="va-new" id="noticeNewRibbon" style="display:none">New</span>
                 <div class="va-vtitle">공지사항</div>
+                <span class="va-new" id="noticeNewRibbon" style="display:none">New</span>
             </div>
             <div class="va-content">
                 <div class="va-desc">
