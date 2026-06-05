@@ -1581,6 +1581,8 @@ async function loadNotices() {
     var s = document.getElementById('noticeScrollList');
     p.onclick = handleNoticeClick;
     s.onclick = handleNoticeClick;
+
+    alignCardBottoms();  // 공지 렌더로 주간공지 위치 바뀜 → 하단 재정렬
 }
 
 function renderNoticeRows(ul, rows) {
@@ -1653,15 +1655,24 @@ function esc(s) {
 // 페이지 로드 시 공지사항 로드
 window.addEventListener('load', function() { loadNotices(); });
 
-// 주간공지 카드 높이를 학원규정 카드와 같게 (데스크톱 2열일 때만)
-function syncWeeklyHeight() {
+// 주간공지·학원규정 카드 하단 위치를 맞춤 (데스크톱 2열일 때만)
+//   서로 다른 열·시작높이라 '높이'가 아닌 '하단 Y'를 일치시킴.
+//   더 아래쪽 하단을 기준으로 짧은 카드만 늘림(min-height) → 잘림 없음.
+function alignCardBottoms() {
     var weekly = document.getElementById('weekly');
     var rules  = document.getElementById('rules');
     if (!weekly || !rules) return;
-    weekly.style.minHeight = (window.innerWidth > 1024) ? rules.offsetHeight + 'px' : '';
+    weekly.style.minHeight = '';
+    rules.style.minHeight  = '';
+    if (window.innerWidth <= 1024) return;  // 모바일/태블릿: 자연 높이
+    var w = weekly.getBoundingClientRect();
+    var r = rules.getBoundingClientRect();
+    var target = Math.max(w.bottom, r.bottom);
+    weekly.style.minHeight = (target - w.top) + 'px';
+    rules.style.minHeight  = (target - r.top) + 'px';
 }
-window.addEventListener('load', syncWeeklyHeight);
-window.addEventListener('resize', syncWeeklyHeight);
+window.addEventListener('load', alignCardBottoms);
+window.addEventListener('resize', alignCardBottoms);
 </script>
 <script>
     // 세로 아코디언 패널 토글
