@@ -1598,7 +1598,7 @@ function renderNoticeRows(ul, rows) {
             ? '<span class="n-badge n-pin">고정</span>'
             : isToday(r.textnotice_date)
                 ? '<span class="n-badge n-new">신규</span>'
-                : '<span class="n-badge n-gen">일반</span>';
+                : '<span class="n-badge" style="visibility:hidden">일반</span>';
         return '<li><a href="#" class="n-row" data-id="' + r.textnotice_id + '">' +
                badge + '<span class="n-title">' + esc(r.textnotice_title||'') + '</span>' +
                '<span class="n-date">' + d + '</span></a></li>';
