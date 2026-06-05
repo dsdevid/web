@@ -204,21 +204,21 @@
         }
         @keyframes va-new-pulse {
             0%   { transform: translateX(-50%) rotate(-7deg) scale(1);    opacity: 1; }
-            50%  { transform: translateX(-50%) rotate(-7deg) scale(1.15); opacity: 0.75; }
+            50%  { transform: translateX(-50%) rotate(-7deg) scale(1.12); opacity: 0.78; }
             100% { transform: translateX(-50%) rotate(-7deg) scale(1);    opacity: 1; }
         }
         .va-new {
             position: absolute;
-            top: 56px;
-            left: 30px;
-            background: #fff;
-            color: #d93025;
+            top: 54px;
+            left: 38px;
+            background: #d93025;
+            color: #fff;
             font-size: 10px;
             font-weight: 700;
             letter-spacing: 0.5px;
-            padding: 3px 9px;
-            border-radius: 9999px;
-            box-shadow: 0 2px 7px rgba(0,0,0,0.28);
+            padding: 4px 10px 4px 15px;
+            clip-path: polygon(11px 0, 100% 0, 100% 100%, 11px 100%, 0 50%);
+            filter: drop-shadow(0 2px 5px rgba(0,0,0,0.35));
             animation: va-new-pulse 1.4s ease-in-out infinite;
         }
         .va-content {
@@ -267,10 +267,14 @@
             }
             .va-vtitle { writing-mode: horizontal-tb; transform: none; letter-spacing: -0.224px; border-right: none; padding-right: 0; font-size: 21px; }
             .va-vtitle::after { display: none; }
-            .va-new { position: static; animation: va-new-pulse-mob 1.4s ease-in-out infinite; }
+            .va-new {
+                position: static;
+                clip-path: polygon(11px 0, 100% 0, 100% 100%, 11px 100%, 0 50%);
+                animation: va-new-pulse-mob 1.4s ease-in-out infinite;
+            }
             @keyframes va-new-pulse-mob {
                 0%   { transform: scale(1);    opacity: 1; }
-                50%  { transform: scale(1.15); opacity: 0.75; }
+                50%  { transform: scale(1.12); opacity: 0.78; }
                 100% { transform: scale(1);    opacity: 1; }
             }
             .va-panel { flex-direction: column; }
