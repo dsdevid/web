@@ -2,10 +2,22 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>강남대성기숙 의대관</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
     <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+    <script>
+        // iOS Safari 는 user-scalable=no 를 무시 → 핀치/더블탭 줌 JS 로 차단
+        // (PDF 확대는 뷰어 자체 +/- 버튼 사용 — 브라우저 줌 불필요)
+        document.addEventListener('gesturestart',  function(e){ e.preventDefault(); }, { passive:false });
+        document.addEventListener('gesturechange', function(e){ e.preventDefault(); }, { passive:false });
+        var _lastTouchEnd = 0;
+        document.addEventListener('touchend', function(e){
+            var now = Date.now();
+            if (now - _lastTouchEnd <= 300) e.preventDefault();  // 더블탭 줌 차단
+            _lastTouchEnd = now;
+        }, { passive:false });
+    </script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -556,7 +568,7 @@
         .pdf-close-btn:hover { background: rgba(255,255,255,0.3); }
         .pdf-frame-wrap {
             width: 100%; max-width: 900px; flex: 1;
-            overflow-y: auto; overflow-x: hidden; border-radius: 6px;
+            overflow: auto; border-radius: 6px;
             min-height: 0; background: #525659;
             -webkit-overflow-scrolling: touch;
         }
@@ -1247,7 +1259,9 @@
 <div id="weeklyPdfModal" class="pdf-modal-backdrop" style="display:none" onclick="closeWeeklyPdf(event)">
     <div class="pdf-modal-header">
         <span class="pdf-modal-title" id="pdfModalTitle"></span>
-        <button class="pdf-close-btn" onclick="closeWeeklyPdf()">✕</button>
+        <button class="pdf-close-btn" onclick="pdfZoom(-0.3)" aria-label="축소">−</button>
+        <button class="pdf-close-btn" onclick="pdfZoom(0.3)" aria-label="확대" style="margin-left:6px">+</button>
+        <button class="pdf-close-btn" onclick="closeWeeklyPdf()" style="margin-left:6px">✕</button>
     </div>
     <div class="pdf-frame-wrap" id="pdfCanvasWrap" onclick="event.stopPropagation()" oncontextmenu="return false"></div>
 </div>
@@ -1826,14 +1840,19 @@ function setWeeklyPage(p) {
 // ── PDF 뷰어 모달 (PDF.js — canvas 렌더, 데스크톱·모바일 공통, 다운로드 차단) ──
 // 버킷 private → 60초 signed URL 발급. canvas 로 그려 원본 파일·다운로드 버튼 노출 없음.
 var _pdfRenderToken = 0;
+var _pdfDoc = null;
+var _pdfScale = 1;          // 표시 배율 (1 = 화면 맞춤)
+var PDF_BASE_SCALE = 2;     // 렌더 해상도 기준 (선명도)
 if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+
 async function openWeeklyPdf(id, title, filePath) {
     var wrap = document.getElementById('pdfCanvasWrap');
     document.getElementById('pdfModalTitle').textContent = title || '주간공지';
     wrap.innerHTML = '<div class="pdf-msg">불러오는 중...</div>';
     document.getElementById('weeklyPdfModal').style.display = 'flex';
     document.body.style.overflowY = 'hidden';
-    var token = ++_pdfRenderToken;  // 중복 오픈/닫힘 시 이전 렌더 취소용
+    var token = ++_pdfRenderToken;
+    _pdfDoc = null; _pdfScale = 1;
 
     var r = await callRpc('get_weekly_download_url', { p_id: id });
     var path = r && (r.signedURL || r.url);
@@ -1846,28 +1865,45 @@ async function openWeeklyPdf(id, title, filePath) {
 
     try {
         var pdf = await pdfjsLib.getDocument(pdfUrl).promise;
-        if (token !== _pdfRenderToken) return;  // 그새 닫힘/재오픈 → 폐기
-        wrap.innerHTML = '';
-        for (var p = 1; p <= pdf.numPages; p++) {
-            var page = await pdf.getPage(p);
-            if (token !== _pdfRenderToken) return;
-            var viewport = page.getViewport({ scale: 1.5 });
-            var canvas = document.createElement('canvas');
-            canvas.width = viewport.width;
-            canvas.height = viewport.height;
-            wrap.appendChild(canvas);
-            await page.render({ canvasContext: canvas.getContext('2d'), viewport: viewport }).promise;
-        }
+        if (token !== _pdfRenderToken) return;
+        _pdfDoc = pdf;
+        await renderPdfPages(token);
     } catch (e) {
         if (token === _pdfRenderToken) wrap.innerHTML = '<div class="pdf-msg">PDF 로드 실패</div>';
     }
 }
 
+// _pdfScale 에 맞춰 전체 페이지 렌더. canvas 픽셀은 고해상도(BASE), 표시폭은 CSS 배율로 확대
+async function renderPdfPages(token) {
+    if (!_pdfDoc) return;
+    var wrap = document.getElementById('pdfCanvasWrap');
+    wrap.innerHTML = '';
+    for (var p = 1; p <= _pdfDoc.numPages; p++) {
+        var page = await _pdfDoc.getPage(p);
+        if (token !== _pdfRenderToken) return;
+        var viewport = page.getViewport({ scale: PDF_BASE_SCALE });
+        var canvas = document.createElement('canvas');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        canvas.style.width = (_pdfScale * 100) + '%';  // 1=화면맞춤, >1=확대(모달 내 가로 스크롤)
+        wrap.appendChild(canvas);
+        await page.render({ canvasContext: canvas.getContext('2d'), viewport: viewport }).promise;
+    }
+}
+
+function pdfZoom(delta) {
+    if (!_pdfDoc) return;
+    _pdfScale = Math.min(3, Math.max(1, Math.round((_pdfScale + delta) * 10) / 10));
+    var wrap = document.getElementById('pdfCanvasWrap');
+    wrap.querySelectorAll('canvas').forEach(function(c) { c.style.width = (_pdfScale * 100) + '%'; });
+}
+
 function closeWeeklyPdf(e) {
     if (e && e.target !== document.getElementById('weeklyPdfModal')) return;
-    _pdfRenderToken++;  // 진행 중 렌더 취소
+    _pdfRenderToken++;
+    _pdfDoc = null;
     document.getElementById('weeklyPdfModal').style.display = 'none';
-    document.getElementById('pdfCanvasWrap').innerHTML = '';  // canvas 정리(메모리)
+    document.getElementById('pdfCanvasWrap').innerHTML = '';
     document.body.style.overflowY = '';
 }
 </script>
