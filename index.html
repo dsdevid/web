@@ -377,6 +377,9 @@
             align-items: start;
         }
 
+        /* grid item 내용이 안 줄어들어(min-width:auto) grid 를 밀어내는 가로 넘침 차단 */
+        .main-wrap > *, .sidebar-col > *, .stats-boxes > * { min-width: 0; }
+
         /* ── Utility Card ── */
         .u-card {
             background: var(--canvas);
