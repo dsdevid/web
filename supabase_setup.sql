@@ -428,3 +428,275 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION logout_admin_session(text) TO anon;
+
+
+-- ============================================================
+-- 12. 주간공지 (weekly_notices)
+-- ============================================================
+-- Supabase Dashboard → Storage → New bucket 에서 아래 버킷 수동 생성:
+--   이름: weekly-pdfs
+--   Public: true (체크)
+--   File size limit: 10485760 (10MB)
+--   Allowed MIME types: application/pdf
+-- ============================================================
+
+CREATE EXTENSION IF NOT EXISTS pg_net;
+
+CREATE TABLE IF NOT EXISTS weekly_notices (
+  wn_id        SERIAL      PRIMARY KEY,
+  wn_title     TEXT        NOT NULL,           -- 파일명 (확장자 포함)
+  wn_date      TIMESTAMPTZ NOT NULL DEFAULT now(),
+  wn_file_path TEXT        NOT NULL,           -- Storage 파일명 (weekly-pdfs 버킷 내 경로)
+  wn_readcnt   INTEGER     NOT NULL DEFAULT 0,
+  wn_hidden    BOOLEAN     NOT NULL DEFAULT false,
+  wn_created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_weekly_hidden ON weekly_notices (wn_hidden);
+CREATE INDEX IF NOT EXISTS idx_weekly_id     ON weekly_notices (wn_id DESC);
+
+-- 공개 목록 (홈 카드 4건, file_path 포함)
+CREATE OR REPLACE FUNCTION get_weekly_list()
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+  RETURN (SELECT COALESCE(jsonb_agg(n), '[]'::jsonb) FROM (
+    SELECT wn_id, wn_title, wn_date, wn_file_path, wn_readcnt
+    FROM weekly_notices
+    WHERE wn_hidden = false
+    ORDER BY wn_id DESC
+    LIMIT 4
+  ) n);
+END;$$;
+GRANT EXECUTE ON FUNCTION get_weekly_list() TO anon;
+
+-- 공개 전체 목록 (전체보기 페이지네이션용)
+CREATE OR REPLACE FUNCTION get_weekly_list_all()
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+  RETURN (SELECT COALESCE(jsonb_agg(n), '[]'::jsonb) FROM (
+    SELECT wn_id, wn_title, wn_date, wn_file_path, wn_readcnt
+    FROM weekly_notices
+    WHERE wn_hidden = false
+    ORDER BY wn_id DESC
+  ) n);
+END;$$;
+GRANT EXECUTE ON FUNCTION get_weekly_list_all() TO anon;
+
+-- 관리자 전체 목록 (숨김 포함)
+DROP FUNCTION IF EXISTS get_weekly_admin(text);
+CREATE FUNCTION get_weekly_admin(p_session_token text)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE v admin_master%ROWTYPE;
+BEGIN
+  v := _admin_session(p_session_token);
+  IF v.admin_id IS NULL THEN RETURN jsonb_build_object('error','UNAUTHORIZED'); END IF;
+  RETURN (SELECT COALESCE(jsonb_agg(n), '[]'::jsonb) FROM (
+    SELECT wn_id, wn_title, wn_date, wn_file_path, wn_readcnt, wn_hidden
+    FROM weekly_notices
+    ORDER BY wn_id DESC
+    LIMIT 500
+  ) n);
+END;$$;
+GRANT EXECUTE ON FUNCTION get_weekly_admin(text) TO anon;
+
+-- 조회수 증가 (anon 호출 가능)
+CREATE OR REPLACE FUNCTION increment_weekly_readcnt(p_id integer)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+  UPDATE weekly_notices SET wn_readcnt = wn_readcnt + 1
+  WHERE wn_id = p_id AND wn_hidden = false;
+END;$$;
+GRANT EXECUTE ON FUNCTION increment_weekly_readcnt(integer) TO anon;
+
+-- 서명 업로드 URL 발급 (admin only)
+-- 보안:
+--   · service_role 키는 Supabase Vault에 암호화 저장 (평문 미보관)
+--     → 사전 1회 실행: SELECT vault.create_secret('eyJ...키...', 'storage_service_key');
+--   · 동기 HTTP는 http 확장(pgsql-http) 사용 (pg_net 은 비동기라 RPC 내 응답 대기 불가)
+--   · SECURITY DEFINER + search_path 고정 + filename 검증으로 경로조작 차단
+CREATE EXTENSION IF NOT EXISTS http WITH SCHEMA extensions;
+
+DROP FUNCTION IF EXISTS get_weekly_upload_url(text, text);
+CREATE FUNCTION get_weekly_upload_url(p_session_token text, p_filename text)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = public, extensions, vault AS $$
+DECLARE
+  v         admin_master%ROWTYPE;
+  v_key     text;
+  v_base    text := 'https://rwplqifhmlduukipnksm.supabase.co';
+  v_status  int;
+  v_content text;
+BEGIN
+  v := _admin_session(p_session_token);
+  IF v.admin_id IS NULL THEN RETURN jsonb_build_object('error','UNAUTHORIZED'); END IF;
+
+  -- 경로 조작 차단: 한글/영숫자/._- 만 허용 (슬래시·.. 거부)
+  IF p_filename IS NULL OR p_filename !~ '^[\w가-힣._-]+$' THEN
+    RETURN jsonb_build_object('error','BAD_FILENAME');
+  END IF;
+
+  -- 키는 Vault에서 복호화 (평문 미저장)
+  SELECT decrypted_secret INTO v_key
+  FROM vault.decrypted_secrets WHERE name = 'storage_service_key';
+  IF v_key IS NULL THEN RETURN jsonb_build_object('error','KEY_MISSING'); END IF;
+
+  SELECT status, content INTO v_status, v_content
+  FROM http(ROW(
+    'POST',
+    v_base || '/storage/v1/object/upload/sign/weekly-pdfs/' || p_filename,
+    ARRAY[http_header('Authorization', 'Bearer ' || v_key)],
+    'application/json',
+    '{}'
+  )::http_request);
+
+  IF v_status BETWEEN 200 AND 299 THEN
+    RETURN v_content::jsonb;
+  ELSE
+    RETURN jsonb_build_object('error','STORAGE_FAILED','status', v_status, 'detail', v_content);
+  END IF;
+END;$$;
+GRANT EXECUTE ON FUNCTION get_weekly_upload_url(text, text) TO anon;
+
+-- 조회용 서명 다운로드 URL 발급 (anon — 버킷 private 전제, 60초 만료)
+-- 버킷 private 전환: UPDATE storage.buckets SET public = false WHERE id = 'weekly-pdfs';
+DROP FUNCTION IF EXISTS get_weekly_download_url(integer);
+CREATE FUNCTION get_weekly_download_url(p_id integer)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = public, extensions, vault AS $$
+DECLARE
+  v_key     text;
+  v_base    text := 'https://rwplqifhmlduukipnksm.supabase.co';
+  v_path    text;
+  v_status  int;
+  v_content text;
+BEGIN
+  SELECT wn_file_path INTO v_path FROM weekly_notices
+  WHERE wn_id = p_id AND wn_hidden = false;
+  IF v_path IS NULL THEN RETURN jsonb_build_object('error','NOT_FOUND'); END IF;
+
+  SELECT decrypted_secret INTO v_key
+  FROM vault.decrypted_secrets WHERE name = 'storage_service_key';
+  IF v_key IS NULL THEN RETURN jsonb_build_object('error','KEY_MISSING'); END IF;
+
+  SELECT status, content INTO v_status, v_content
+  FROM http(ROW(
+    'POST',
+    v_base || '/storage/v1/object/sign/weekly-pdfs/' || v_path,
+    ARRAY[http_header('Authorization', 'Bearer ' || v_key)],
+    'application/json',
+    '{"expiresIn":60}'
+  )::http_request);
+
+  IF v_status BETWEEN 200 AND 299 THEN
+    RETURN v_content::jsonb;
+  ELSE
+    RETURN jsonb_build_object('error','STORAGE_FAILED','status', v_status, 'detail', v_content);
+  END IF;
+END;$$;
+GRANT EXECUTE ON FUNCTION get_weekly_download_url(integer) TO anon;
+
+-- 동일 파일명 교체용 — wn_title UNIQUE 제약
+-- 기존 중복 wn_title 정리: 같은 제목 중 최신(wn_id 큰) 1건만 남기고 삭제
+DELETE FROM weekly_notices a USING weekly_notices b
+  WHERE a.wn_title = b.wn_title AND a.wn_id < b.wn_id;
+ALTER TABLE weekly_notices DROP CONSTRAINT IF EXISTS weekly_notices_title_uniq;
+ALTER TABLE weekly_notices ADD CONSTRAINT weekly_notices_title_uniq UNIQUE (wn_title);
+
+-- Storage 파일 삭제 공통 헬퍼 (register_weekly 교체 / delete_weekly 공용)
+--   삭제 실패는 무시(EXCEPTION) — 고아 파일만 잔존, 본 작업(등록/삭제)은 롤백 안 됨
+CREATE OR REPLACE FUNCTION _delete_weekly_storage(p_path text)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = public, extensions, vault AS $$
+DECLARE
+  v_key  text;
+  v_base text := 'https://rwplqifhmlduukipnksm.supabase.co';
+BEGIN
+  IF p_path IS NULL OR trim(p_path) = '' THEN RETURN; END IF;
+  SELECT decrypted_secret INTO v_key FROM vault.decrypted_secrets WHERE name = 'storage_service_key';
+  IF v_key IS NULL THEN RETURN; END IF;
+  PERFORM http(ROW(
+    'DELETE',
+    v_base || '/storage/v1/object/weekly-pdfs/' || p_path,
+    ARRAY[http_header('Authorization', 'Bearer ' || v_key)],
+    NULL, NULL
+  )::http_request);
+EXCEPTION WHEN OTHERS THEN
+  NULL;  -- Storage 삭제 실패 무시
+END;$$;
+
+-- 등록 (파일 업로드 완료 후 메타 저장)
+--   인증: service_role(제어판 ps1) 직접 통과 / 그 외(관리자 웹)는 세션 토큰 검증
+--   동일 wn_title → UPSERT(교체), 교체 시 이전 Storage 파일 삭제
+DROP FUNCTION IF EXISTS register_weekly(text, text, text);
+CREATE FUNCTION register_weekly(
+  p_session_token text,
+  p_title         text,
+  p_file_path     text
+) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = public, extensions, vault AS $$
+DECLARE
+  v_role text := current_setting('request.jwt.claims', true)::jsonb ->> 'role';
+  v_id   integer;
+  v_old  text;
+BEGIN
+  -- service_role 아니면 관리자 세션 검증
+  IF v_role IS DISTINCT FROM 'service_role' THEN
+    IF (_admin_session(p_session_token)).admin_id IS NULL THEN
+      RETURN jsonb_build_object('success',false,'error','UNAUTHORIZED');
+    END IF;
+  END IF;
+  IF p_title IS NULL OR trim(p_title) = '' THEN RETURN jsonb_build_object('success',false,'error','TITLE_EMPTY'); END IF;
+  IF p_file_path IS NULL OR trim(p_file_path) = '' THEN RETURN jsonb_build_object('success',false,'error','PATH_EMPTY'); END IF;
+
+  -- 동일 파일명 기존 경로 보관 (교체 후 옛 파일 삭제용)
+  SELECT wn_file_path INTO v_old FROM weekly_notices WHERE wn_title = p_title;
+
+  INSERT INTO weekly_notices (wn_title, wn_file_path, wn_date)
+  VALUES (p_title, p_file_path, now())
+  ON CONFLICT (wn_title) DO UPDATE
+    SET wn_file_path = EXCLUDED.wn_file_path, wn_date = now()
+  RETURNING wn_id INTO v_id;
+
+  -- 교체된 경우 이전 Storage 파일 삭제 (경로가 바뀐 경우만)
+  IF v_old IS NOT NULL AND v_old <> p_file_path THEN
+    PERFORM _delete_weekly_storage(v_old);
+  END IF;
+
+  RETURN jsonb_build_object('success', true, 'id', v_id);
+END;$$;
+GRANT EXECUTE ON FUNCTION register_weekly(text, text, text) TO anon, service_role;
+
+-- 숨김 토글
+DROP FUNCTION IF EXISTS toggle_weekly_hidden(text, integer, boolean);
+CREATE FUNCTION toggle_weekly_hidden(p_session_token text, p_id integer, p_hidden boolean)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE v admin_master%ROWTYPE;
+BEGIN
+  v := _admin_session(p_session_token);
+  IF v.admin_id IS NULL THEN RETURN jsonb_build_object('success',false,'error','UNAUTHORIZED'); END IF;
+  UPDATE weekly_notices SET wn_hidden = p_hidden WHERE wn_id = p_id;
+  RETURN jsonb_build_object('success', FOUND);
+END;$$;
+GRANT EXECUTE ON FUNCTION toggle_weekly_hidden(text, integer, boolean) TO anon;
+
+-- 삭제 (DB 행 + Storage 파일 동시 삭제)
+DROP FUNCTION IF EXISTS delete_weekly(text, integer);
+CREATE FUNCTION delete_weekly(p_session_token text, p_id integer)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = public, extensions, vault AS $$
+DECLARE
+  v      admin_master%ROWTYPE;
+  v_path text;
+BEGIN
+  v := _admin_session(p_session_token);
+  IF v.admin_id IS NULL THEN RETURN jsonb_build_object('success',false,'error','UNAUTHORIZED'); END IF;
+
+  SELECT wn_file_path INTO v_path FROM weekly_notices WHERE wn_id = p_id;
+  IF NOT FOUND THEN RETURN jsonb_build_object('success',false,'error','NOT_FOUND'); END IF;
+
+  DELETE FROM weekly_notices WHERE wn_id = p_id;
+  PERFORM _delete_weekly_storage(v_path);  -- Storage 파일도 삭제 (실패 무시)
+
+  RETURN jsonb_build_object('success', true);
+END;$$;
+GRANT EXECUTE ON FUNCTION delete_weekly(text, integer) TO anon;

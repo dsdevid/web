@@ -1,9 +1,11 @@
 // =============================================
 // 설정값 - 환경에 맞게 수정
 // =============================================
+// SUPABASE_KEY(service_role)는 코드에 평문 저장 금지 — GAS 스크립트 속성에서 조회.
+//   등록: GAS 편집기 → 프로젝트 설정(⚙) → 스크립트 속성 → 속성 'SUPABASE_KEY' 값 입력
 const CONFIG = {
   SUPABASE_URL  : 'https://rwplqifhmlduukipnksm.supabase.co',
-  SUPABASE_KEY  : '***REMOVED-SERVICE-ROLE-JWT***',
+  SUPABASE_KEY  : PropertiesService.getScriptProperties().getProperty('SUPABASE_KEY'),
   SHEET_NAME    : '공지사항',
   TABLE_NAME    : 'user_textnotice',
 };

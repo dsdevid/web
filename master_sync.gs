@@ -7,10 +7,11 @@ const AUTO_SYNC    = false;   // true: 편집 시 자동, false: 수동(syncStud
 
 const TARGET_SHEET = '마스터';
 const SUPABASE_URL = 'https://rwplqifhmlduukipnksm.supabase.co';
-// ⚠ secret 키 (서버 전용 — 절대 브라우저 노출/커밋 금지).
-//    sync_students 는 anon 미부여 → secret 키 필요.
-//    Supabase Dashboard → Settings → API Keys → Secret keys 에서 발급한 sb_secret_… 키 입력.
-const SUPABASE_KEY = 'sb_secret_여기에_시크릿_키_입력';
+// ⚠ secret/service_role 키 (서버 전용 — 절대 브라우저 노출/커밋 금지).
+//    sync_students 는 anon 미부여 → 서버 키 필요.
+//    코드에 평문 저장 금지 → GAS 스크립트 속성에서 조회.
+//    등록: GAS 편집기 → 프로젝트 설정(⚙) → 스크립트 속성 → 'SUPABASE_KEY' 값 입력
+const SUPABASE_KEY = PropertiesService.getScriptProperties().getProperty('SUPABASE_KEY');
 
 // 시트 열 (0-based): B=학번, C=성명, D=성별, E=반, F=그룹
 const COL = { ID: 1, NAME: 2, SEX: 3, BAN: 4, PRT: 5 };

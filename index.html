@@ -479,22 +479,6 @@
         .w-row:last-child { border-bottom: none; }
         .w-row:hover { background: var(--parchment); }
 
-        .w-num {
-            width: 36px;
-            height: 36px;
-            background: var(--parchment);
-            border: 1px solid var(--hairline);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 13px;
-            font-weight: 600;
-            letter-spacing: -0.12px;
-            color: var(--ink);
-            flex-shrink: 0;
-        }
-
         .w-info { flex: 1; overflow: hidden; }
 
         .w-title {
@@ -512,6 +496,62 @@
             letter-spacing: -0.12px;
             color: var(--ink-48);
             margin-top: 2px;
+        }
+
+        /* ── 주간공지 페이지네이션 ── */
+        .weekly-pagination {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            padding: 14px 24px;
+            border-top: 1px solid var(--divider);
+            flex-shrink: 0;
+        }
+        .wpg-btn {
+            min-width: 32px; height: 32px; padding: 0 8px;
+            border: 1px solid var(--hairline); border-radius: 6px;
+            background: var(--canvas); color: var(--ink);
+            font-size: 13px; font-family: inherit;
+            cursor: pointer; transition: background 0.1s;
+        }
+        .wpg-btn:hover:not(:disabled) { background: var(--parchment); }
+        .wpg-btn.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+        .wpg-btn:disabled { opacity: 0.35; cursor: default; }
+
+        /* ── PDF 뷰어 모달 ── */
+        .pdf-modal-backdrop {
+            position: fixed; inset: 0; z-index: 800;
+            background: rgba(0,0,0,0.9);
+            display: flex; flex-direction: column;
+            align-items: center;
+            padding: 0 12px 16px;
+        }
+        .pdf-modal-header {
+            width: 100%; max-width: 900px;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px 4px;
+            color: #fff;
+            flex-shrink: 0;
+        }
+        .pdf-modal-title {
+            font-size: 14px; font-weight: 600; flex: 1;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+            margin-right: 12px;
+        }
+        .pdf-close-btn {
+            background: rgba(255,255,255,0.15); border: none; color: #fff;
+            width: 30px; height: 30px; border-radius: 50%; font-size: 14px;
+            cursor: pointer; flex-shrink: 0; transition: background 0.15s;
+        }
+        .pdf-close-btn:hover { background: rgba(255,255,255,0.3); }
+        .pdf-frame-wrap {
+            width: 100%; max-width: 900px; flex: 1;
+            position: relative; overflow: hidden; border-radius: 6px;
+            min-height: 0;
+        }
+        .pdf-frame-wrap iframe {
+            width: 100%; height: 100%; border: none; display: block;
         }
 
         /* Stats Boxes */
@@ -792,16 +832,6 @@
             .btn-pill, .btn-pill-ghost { font-size: 14px; padding: 10px 18px; }
         }
 
-        /* ── 공지 스크롤 영역 ── */
-        .notice-scroll {
-            max-height: 141px; /* 3행 */
-            overflow-y: auto;
-            scrollbar-width: thin;
-            scrollbar-color: var(--hairline) transparent;
-        }
-        .notice-scroll::-webkit-scrollbar { width: 4px; }
-        .notice-scroll::-webkit-scrollbar-thumb { background: var(--hairline); border-radius: 2px; }
-
         /* ── 공지 상세 모달 ── */
         .nd-modal-box {
             background: #f5f5f7;
@@ -986,7 +1016,7 @@
                 <div id="navLoggedIn" style="display:none;align-items:center;gap:8px;">
                     <span class="nav-user-name" id="navUserName"></span>
                     <a id="navAdminLink" style="display:none;cursor:pointer;" class="nav-admin-pill"
-                       onclick="window.open('admin.html','dshw_admin','width=1280,height=900')">관리자</a>
+                       onclick="window.open('admin.html','dshw_admin','width=768,height=900')">관리자</a>
                     <button class="nav-logout-btn" onclick="doLogout()">로그아웃</button>
                 </div>
             </div>
@@ -1029,6 +1059,7 @@
         <div class="va-panel" style="--va-color:#d97706;--va-comp:#0668d9;--va-img:url('img/weekly.jpg')">
             <div class="va-bar">
                 <div class="va-vtitle">주간공지</div>
+                <span class="va-new" id="weeklyNewRibbon" style="display:none">New</span>
             </div>
             <div class="va-content">
                 <div class="va-desc">
@@ -1085,10 +1116,9 @@
                 <div class="u-card-head">
                     <span class="u-title">공지사항</span>
                 </div>
-                <!-- 고정 공지 (항상 노출) -->
+                <!-- 페이지당 4건, 5건 이상이면 하단 페이지네이션 -->
                 <ul class="notice-list" id="noticePinList"></ul>
-                <!-- 일반 공지 (스크롤, 3행) -->
-                <ul class="notice-list notice-scroll" id="noticeScrollList"></ul>
+                <div class="weekly-pagination" id="noticePagination" style="display:none"></div>
                 <div id="noticeEmpty" style="display:none;padding:20px 24px;text-align:center;color:var(--ink-muted);font-size:13px;">
                     공지사항이 없습니다
                 </div>
@@ -1098,38 +1128,11 @@
             <div class="u-card" id="weekly">
                 <div class="u-card-head">
                     <span class="u-title">주간공지<span class="u-badge">PDF</span></span>
-                    <a href="#" class="u-more">전체보기</a>
                 </div>
-                <ul class="weekly-list">
-                    <li><a href="#" class="w-row">
-                        <div class="w-num">22</div>
-                        <div class="w-info">
-                            <div class="w-title">2025년 5월 4주차 주간공지</div>
-                            <div class="w-meta">2025.05.26 · 조회 142</div>
-                        </div>
-                    </a></li>
-                    <li><a href="#" class="w-row">
-                        <div class="w-num">21</div>
-                        <div class="w-info">
-                            <div class="w-title">2025년 5월 3주차 주간공지</div>
-                            <div class="w-meta">2025.05.19 · 조회 318</div>
-                        </div>
-                    </a></li>
-                    <li><a href="#" class="w-row">
-                        <div class="w-num">20</div>
-                        <div class="w-info">
-                            <div class="w-title">2025년 5월 2주차 주간공지</div>
-                            <div class="w-meta">2025.05.12 · 조회 401</div>
-                        </div>
-                    </a></li>
-                    <li><a href="#" class="w-row">
-                        <div class="w-num">19</div>
-                        <div class="w-info">
-                            <div class="w-title">2025년 5월 1주차 주간공지</div>
-                            <div class="w-meta">2025.05.05 · 조회 489</div>
-                        </div>
-                    </a></li>
+                <ul class="weekly-list" id="weeklyHomeList">
+                    <li style="padding:28px;text-align:center;color:var(--ink-48);font-size:13px">로딩 중...</li>
                 </ul>
+                <div class="weekly-pagination" id="weeklyPagination" style="display:none"></div>
             </div>
 
             <!-- Stats Preview -->
@@ -1180,7 +1183,6 @@
             <div class="u-card" id="rules">
                 <div class="u-card-head">
                     <span class="u-title">학원규정</span>
-                    <a href="#" class="u-more">전체보기</a>
                 </div>
                 <div class="rules-wrap">
                     <div class="rule-cat">생활 규정</div>
@@ -1228,6 +1230,18 @@
         <div class="nd-footer">강남대성기숙(의대관)</div>
     </div>
 </div>
+
+<!-- ── 주간공지 PDF 뷰어 모달 ── -->
+<div id="weeklyPdfModal" class="pdf-modal-backdrop" style="display:none" onclick="closeWeeklyPdf(event)">
+    <div class="pdf-modal-header">
+        <span class="pdf-modal-title" id="pdfModalTitle"></span>
+        <button class="pdf-close-btn" onclick="closeWeeklyPdf()">✕</button>
+    </div>
+    <div class="pdf-frame-wrap" onclick="event.stopPropagation()">
+        <iframe id="pdfIframe" src="" title="주간공지 PDF 뷰어" allowfullscreen></iframe>
+    </div>
+</div>
+
 
 <!-- ── 로그인 모달 ── -->
 <div id="loginModal" class="modal-backdrop" style="display:none" onclick="handleModalBackdrop(event)">
@@ -1457,7 +1471,7 @@ async function doAdminLogin() {
     localStorage.setItem('adm_super', r.admin_is_super_admin ? '1' : '0');
     localStorage.setItem('adm_token', r.session_token);
     closeLoginModal();
-    window.open('admin.html', 'dshw_admin', 'width=1280,height=900');
+    window.open('admin.html', 'dshw_admin', 'width=768,height=900');
 }
 
 // ─────────────────────────────────────────────
@@ -1578,27 +1592,28 @@ var _notices = [];
 async function loadNotices() {
     var list = await callRpc('get_notices_public', {});
     if (!Array.isArray(list)) return;
-    _notices = list;
-
-    var pinned = list.filter(function(r) { return r.textnotice_pin; });
-    var normal = list.filter(function(r) { return !r.textnotice_pin; });
-
-    renderNoticeRows(document.getElementById('noticePinList'),   pinned);
-    renderNoticeRows(document.getElementById('noticeScrollList'), normal);
+    _notices    = list;  // 전체 보유 (클라에서 페이지 분할)
+    _noticePage = 1;
+    renderNoticePage();
 
     document.getElementById('noticeEmpty').style.display =
-        (pinned.length + normal.length === 0) ? 'block' : 'none';
+        (list.length === 0) ? 'block' : 'none';
 
     document.getElementById('noticeNewRibbon').style.display =
         list.some(function(r) { return isToday(r.textnotice_date); }) ? 'block' : 'none';
 
     // 이벤트 위임 (중복 등록 방지)
-    var p = document.getElementById('noticePinList');
-    var s = document.getElementById('noticeScrollList');
-    p.onclick = handleNoticeClick;
-    s.onclick = handleNoticeClick;
+    document.getElementById('noticePinList').onclick = handleNoticeClick;
 
     alignCardBottoms();  // 공지 렌더로 주간공지 위치 바뀜 → 하단 재정렬
+}
+
+// 페이지당 4건 (고정 우선 정렬은 서버 보장)
+function renderNoticePage() {
+    var start = (_noticePage - 1) * NOTICE_PER_PAGE;
+    renderNoticeRows(document.getElementById('noticePinList'),
+                     _notices.slice(start, start + NOTICE_PER_PAGE));
+    renderNoticePagination();
 }
 
 function renderNoticeRows(ul, rows) {
@@ -1630,6 +1645,32 @@ async function handleNoticeClick(e) {
     }
     openNoticeDetail(id, n.textnotice_title, n.textnotice_body,
                      n.textnotice_date, n.textnotice_owner, n.textnotice_readcnt);
+}
+
+// ── 공지 홈 카드 페이지네이션 (5건 이상이면 노출) ──
+var _noticePage     = 1;
+var NOTICE_PER_PAGE = 4;
+
+function renderNoticePagination() {
+    var pg = document.getElementById('noticePagination');
+    var total = Math.ceil(_notices.length / NOTICE_PER_PAGE);
+    if (total <= 1) { pg.style.display = 'none'; pg.innerHTML = ''; return; }
+    pg.style.display = 'flex';
+    var html = '<button class="wpg-btn" onclick="setNoticePage(' + (_noticePage-1) + ')"'
+             + (_noticePage<=1?' disabled':'') + '>&#8249;</button>';
+    for (var i = 1; i <= total; i++) {
+        html += '<button class="wpg-btn' + (i===_noticePage?' active':'') + '" onclick="setNoticePage(' + i + ')">' + i + '</button>';
+    }
+    html += '<button class="wpg-btn" onclick="setNoticePage(' + (_noticePage+1) + ')"'
+          + (_noticePage>=total?' disabled':'') + '>&#8250;</button>';
+    pg.innerHTML = html;
+}
+
+function setNoticePage(p) {
+    var total = Math.ceil(_notices.length / NOTICE_PER_PAGE);
+    if (p < 1 || p > total) return;
+    _noticePage = p;
+    renderNoticePage();
 }
 
 function openNoticeDetail(id, title, body, date, owner, readcnt) {
@@ -1668,8 +1709,8 @@ function esc(s) {
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// 페이지 로드 시 공지사항 로드
-window.addEventListener('load', function() { loadNotices(); });
+// 페이지 로드 시 공지사항 + 주간공지 로드
+window.addEventListener('load', function() { loadNotices(); loadWeekly(); });
 
 // 주간공지·학원규정 카드 하단 위치를 맞춤 (데스크톱 2열일 때만)
 //   서로 다른 열·시작높이라 '높이'가 아닌 '하단 Y'를 일치시킴.
@@ -1689,6 +1730,112 @@ function alignCardBottoms() {
 }
 window.addEventListener('load', alignCardBottoms);
 window.addEventListener('resize', alignCardBottoms);
+</script>
+<script>
+// ─────────────────────────────────────────────
+// 주간공지 DB 연동
+// ─────────────────────────────────────────────
+var _weeklyAll       = [];
+var _weeklyPage      = 1;
+var WEEKLY_PER_PAGE  = 4;
+
+async function loadWeekly() {
+    var list = await callRpc('get_weekly_list_all', {});
+    if (!Array.isArray(list)) {
+        document.getElementById('weeklyHomeList').innerHTML =
+            '<li style="padding:28px;text-align:center;color:var(--ink-48);font-size:13px">불러오기 실패</li>';
+        return;
+    }
+    _weeklyAll  = list;
+    _weeklyPage = 1;
+    renderWeeklyPage();
+    document.getElementById('weeklyNewRibbon').style.display =
+        list.some(function(r) { return isToday(r.wn_date); }) ? 'block' : 'none';
+    alignCardBottoms();
+}
+
+function renderWeeklyPage() {
+    var ul = document.getElementById('weeklyHomeList');
+    if (!_weeklyAll.length) {
+        ul.innerHTML = '<li style="padding:28px;text-align:center;color:var(--ink-48);font-size:13px">등록된 주간공지가 없습니다</li>';
+        document.getElementById('weeklyPagination').style.display = 'none';
+        return;
+    }
+    var start = (_weeklyPage - 1) * WEEKLY_PER_PAGE;
+    ul.innerHTML = _weeklyAll.slice(start, start + WEEKLY_PER_PAGE).map(weeklyRowHtml).join('');
+    renderWeeklyPagination();
+}
+
+// 주간 행 1개 (좌측: 신규 배지 / 우측: 등록일 YY.MM.DD — 공지와 동일)
+function weeklyRowHtml(r) {
+    var d     = r.wn_date ? r.wn_date.substring(2,10).replace(/-/g,'.') : '';
+    var ttl   = esc(r.wn_title || '');
+    var path  = esc(r.wn_file_path || '');
+    var badge = isToday(r.wn_date)
+        ? '<span class="n-badge n-new">신규</span>'
+        : '<span class="n-badge" style="visibility:hidden">신규</span>';
+    return '<li><a href="#" class="w-row" data-id="' + r.wn_id + '" data-title="' + ttl + '" data-path="' + path + '" onclick="return handleWeeklyClick(event)">'
+         + badge
+         + '<div class="w-info">'
+         + '<div class="w-title">' + ttl + '</div>'
+         + '<div class="w-meta">조회 ' + (r.wn_readcnt||0) + '</div>'
+         + '</div>'
+         + '<span class="n-date">' + d + '</span>'
+         + '</a></li>';
+}
+
+function handleWeeklyClick(e) {
+    e.preventDefault();
+    var row = e.currentTarget;
+    openWeeklyPdf(parseInt(row.dataset.id), row.dataset.title, row.dataset.path);
+    return false;
+}
+
+function renderWeeklyPagination() {
+    var pg = document.getElementById('weeklyPagination');
+    var total = Math.ceil(_weeklyAll.length / WEEKLY_PER_PAGE);
+    if (total <= 1) { pg.style.display = 'none'; pg.innerHTML = ''; return; }
+    pg.style.display = 'flex';
+    var html = '<button class="wpg-btn" onclick="setWeeklyPage(' + (_weeklyPage-1) + ')"'
+             + (_weeklyPage<=1?' disabled':'') + '>&#8249;</button>';
+    for (var i = 1; i <= total; i++) {
+        html += '<button class="wpg-btn' + (i===_weeklyPage?' active':'') + '" onclick="setWeeklyPage(' + i + ')">' + i + '</button>';
+    }
+    html += '<button class="wpg-btn" onclick="setWeeklyPage(' + (_weeklyPage+1) + ')"'
+          + (_weeklyPage>=total?' disabled':'') + '>&#8250;</button>';
+    pg.innerHTML = html;
+}
+
+function setWeeklyPage(p) {
+    var total = Math.ceil(_weeklyAll.length / WEEKLY_PER_PAGE);
+    if (p < 1 || p > total) return;
+    _weeklyPage = p;
+    renderWeeklyPage();
+}
+
+// ── PDF 뷰어 모달 ──
+// 버킷 private → 서버에서 60초 만료 signed URL 발급 (URL 공유/재배포 차단)
+async function openWeeklyPdf(id, title, filePath) {
+    var r = await callRpc('get_weekly_download_url', { p_id: id });
+    var path = r && (r.signedURL || r.url);
+    if (!r || r.error || !path) { alert('파일을 불러올 수 없습니다'); return; }
+    var pdfUrl = (path.indexOf('http') === 0 ? path : SUPABASE_URL + '/storage/v1' + path)
+               + '#toolbar=0&navpanes=0';
+    document.getElementById('pdfModalTitle').textContent = title || '주간공지';
+    document.getElementById('pdfIframe').src = pdfUrl;
+    document.getElementById('weeklyPdfModal').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    if (!localStorage.getItem('adm_id')) {
+        callRpc('increment_weekly_readcnt', { p_id: id });
+    }
+}
+
+function closeWeeklyPdf(e) {
+    if (e && e.target !== document.getElementById('weeklyPdfModal')) return;
+    document.getElementById('weeklyPdfModal').style.display = 'none';
+    document.getElementById('pdfIframe').src = '';
+    document.body.style.overflow = '';
+}
 </script>
 <script>
     // 세로 아코디언 패널 토글

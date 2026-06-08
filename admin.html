@@ -315,20 +315,24 @@
     .action-sub { font-size: 11px; color: var(--ink-muted); }
 
     /* ── 테이블 ── */
-    .data-table { width: 100%; border-collapse: collapse; }
+    .data-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 
     .data-table th {
-      padding: 9px 20px;
+      padding: 9px 10px;
       font-size: 11px; font-weight: 600; letter-spacing: 0.3px;
       text-transform: uppercase; color: var(--ink-muted);
-      text-align: left; background: var(--parchment);
+      text-align: center; background: var(--parchment);
       border-bottom: 1px solid var(--hairline);
     }
 
     .data-table td {
-      padding: 12px 20px; font-size: 13px;
+      padding: 12px 10px; font-size: 13px; text-align: center;
       border-bottom: 1px solid var(--divider);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
+
+    /* 제목·파일명 등 텍스트 컬럼만 좌측 정렬 + 여백 */
+    .data-table th.col-l, .data-table td.col-l { text-align: left; padding-left: 16px; }
 
     .data-table tr:last-child td { border-bottom: none; }
     .data-table tbody tr:hover td { background: var(--parchment); }
@@ -392,6 +396,28 @@
     .btn-cancel { flex: 1; height: 40px; background: none; color: var(--ink-muted); border: 1px solid var(--hairline); border-radius: 8px; font-size: 14px; font-family: inherit; cursor: pointer; }
     .edit-error { display: none; font-size: 12px; color: var(--danger); margin-top: 8px; text-align: center; }
     .edit-error.show { display: block; }
+
+    /* ── 주간공지 파일 업로드 ── */
+    .upload-area {
+      border: 2px dashed var(--hairline);
+      border-radius: 10px;
+      padding: 24px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      margin: 16px 20px;
+    }
+    .upload-area:hover, .upload-area.drag {
+      border-color: var(--blue);
+      background: rgba(0,102,204,0.04);
+    }
+    .upload-area input[type=file] { display: none; }
+    .upload-label { font-size: 13px; color: var(--ink-muted); }
+    .upload-progress {
+      display: none; font-size: 12px; color: var(--blue);
+      margin-top: 8px; text-align: center;
+    }
+    .upload-progress.show { display: block; }
 
     /* ── 반응형 ── */
     @media (max-width: 480px) {
@@ -483,15 +509,40 @@
         <table class="data-table">
           <thead>
             <tr>
-              <th>제목</th>
-              <th style="width:90px">등록일</th>
-              <th style="width:52px">조회</th>
+              <th class="col-l">제목</th>
+              <th style="width:110px">등록일</th>
+              <th style="width:56px">조회</th>
               <th style="width:52px">고정</th>
               <th style="width:52px">게시</th>
-              <th style="width:68px">관리</th>
+              <th style="width:56px">관리</th>
             </tr>
           </thead>
           <tbody id="noticeTbody">
+            <tr class="empty-row"><td colspan="6">로딩 중...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 주간공지 관리 -->
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">주간공지</span>
+        <button class="btn-add" onclick="openWeeklyUpload()">+ 파일 등록</button>
+      </div>
+      <div class="notice-mgmt-scroll">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width:40px">#</th>
+              <th class="col-l">파일명</th>
+              <th style="width:110px">등록일</th>
+              <th style="width:56px">조회</th>
+              <th style="width:52px">게시</th>
+              <th style="width:52px">삭제</th>
+            </tr>
+          </thead>
+          <tbody id="weeklyTbody">
             <tr class="empty-row"><td colspan="6">로딩 중...</td></tr>
           </tbody>
         </table>
@@ -513,6 +564,37 @@
       </div>
     </div>
 
+  </div>
+</div>
+
+<!-- ── 주간공지 업로드 모달 ── -->
+<div id="weeklyUploadModal" class="edit-modal-backdrop" style="display:none" onclick="handleWeeklyUploadBackdrop(event)">
+  <div class="edit-modal-box">
+    <div style="font-size:17px;font-weight:600;margin-bottom:4px">주간공지 파일 등록</div>
+    <div style="font-size:12px;color:var(--ink-muted);margin-bottom:14px">PDF 파일을 선택하면 자동으로 파일명이 제목으로 등록됩니다</div>
+
+    <div class="upload-area" id="weeklyDropArea"
+         onclick="document.getElementById('weeklyFileInput').click()"
+         ondragover="event.preventDefault();this.classList.add('drag')"
+         ondragleave="this.classList.remove('drag')"
+         ondrop="handleWeeklyDrop(event)">
+      <input type="file" id="weeklyFileInput" accept=".pdf,application/pdf" onchange="handleWeeklyFileSelect(event)">
+      <div class="upload-label">
+        <div style="font-size:32px;margin-bottom:8px">📄</div>
+        <div style="font-weight:600;margin-bottom:4px">PDF 파일 선택</div>
+        <div>클릭하거나 파일을 여기로 끌어다 놓으세요</div>
+        <div style="margin-top:6px;font-size:11px">최대 10MB · PDF만 허용</div>
+      </div>
+    </div>
+
+    <div id="weeklySelectedName" style="display:none;font-size:13px;font-weight:600;padding:8px 4px;color:var(--ink)"></div>
+    <div id="weeklyUploadProgress" class="upload-progress"></div>
+
+    <div class="edit-actions">
+      <button class="btn-save" id="weeklyUploadBtn" onclick="uploadWeeklyFile()" disabled style="opacity:0.45">업로드</button>
+      <button class="btn-cancel" onclick="closeWeeklyUpload()">취소</button>
+    </div>
+    <div class="edit-error" id="weeklyUploadError"></div>
   </div>
 </div>
 
@@ -549,8 +631,8 @@
 // ══════════════════════════════════════════════
 // Supabase 설정 (index.html과 동일한 anon key 사용)
 // ══════════════════════════════════════════════
-const SUPABASE_URL  = 'https://rwplqifhmlduukipnksm.supabase.co';
-const SUPABASE_ANON = 'sb_publishable_lbs8wxKQiAH_ZjjWA5EjaQ_IGAc3voJ';
+const SUPABASE_URL     = 'https://rwplqifhmlduukipnksm.supabase.co';
+const SUPABASE_ANON    = 'sb_publishable_lbs8wxKQiAH_ZjjWA5EjaQ_IGAc3voJ';
 
 async function callRpc(func, params) {
   try {
@@ -593,12 +675,12 @@ function renderAdminNoticeTable(list) {
     var pinTxt = r.textnotice_pin    ? '📌' : '—';
     var pubTxt = r.textnotice_hidden ? '🔒' : '✅';
     return '<tr>'
-      + '<td style="cursor:pointer" onclick="openNoticeEdit(' + r.textnotice_id + ')">'
+      + '<td class="col-l" style="cursor:pointer" onclick="openNoticeEdit(' + r.textnotice_id + ')" title="' + esc(r.textnotice_title || '') + '">'
         + esc(r.textnotice_title || '') + '</td>'
       + '<td class="td-muted">' + date + '</td>'
       + '<td>' + (r.textnotice_readcnt || 0) + '</td>'
-      + '<td style="text-align:center">' + pinTxt + '</td>'
-      + '<td style="text-align:center">' + pubTxt + '</td>'
+      + '<td>' + pinTxt + '</td>'
+      + '<td>' + pubTxt + '</td>'
       + '<td><button class="btn-icon" onclick="deleteNotice(' + r.textnotice_id + ')">🗑️</button></td>'
       + '</tr>';
   }).join('');
@@ -663,6 +745,179 @@ async function deleteNotice(id) {
 function showEditError(msg) {
   var el = document.getElementById('editError');
   el.textContent = msg; el.className = 'edit-error show';
+}
+
+// ─────────────────────────────────────────────
+// 주간공지 관리
+// ─────────────────────────────────────────────
+var _weeklyFile = null;
+
+async function loadAdminWeekly() {
+  var list = await callRpc('get_weekly_admin', { p_session_token: getToken() });
+  if (!Array.isArray(list)) return;
+  renderAdminWeeklyTable(list);
+}
+
+function renderAdminWeeklyTable(list) {
+  var tbody = document.getElementById('weeklyTbody');
+  if (!list.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="6">등록된 주간공지가 없습니다</td></tr>';
+    return;
+  }
+  tbody.innerHTML = list.map(function(r) {
+    var date   = r.wn_date ? r.wn_date.substring(0,10) : '—';
+    var pubTxt = r.wn_hidden ? '🔒' : '✅';
+    return '<tr>'
+      + '<td style="color:var(--ink-muted)">' + r.wn_id + '</td>'
+      + '<td class="col-l" title="' + esc(r.wn_title||'') + '">'
+        + esc(r.wn_title||'') + '</td>'
+      + '<td class="td-muted">' + date + '</td>'
+      + '<td>' + (r.wn_readcnt||0) + '</td>'
+      + '<td style="text-align:center">'
+        + '<button class="btn-icon" onclick="toggleWeeklyHidden(' + r.wn_id + ',' + !r.wn_hidden + ')" title="' + (r.wn_hidden?'게시':'비공개로 전환') + '">' + pubTxt + '</button></td>'
+      + '<td><button class="btn-icon" onclick="deleteWeekly(' + r.wn_id + ')">🗑️</button></td>'
+      + '</tr>';
+  }).join('');
+}
+
+function openWeeklyUpload() {
+  _weeklyFile = null;
+  document.getElementById('weeklyFileInput').value = '';
+  document.getElementById('weeklySelectedName').style.display = 'none';
+  document.getElementById('weeklyUploadProgress').className = 'upload-progress';
+  document.getElementById('weeklyUploadError').className = 'edit-error';
+  var btn = document.getElementById('weeklyUploadBtn');
+  btn.disabled = true;
+  btn.style.opacity = '0.45';
+  document.getElementById('weeklyUploadModal').style.display = 'flex';
+}
+
+function closeWeeklyUpload() {
+  document.getElementById('weeklyUploadModal').style.display = 'none';
+  _weeklyFile = null;
+}
+
+function handleWeeklyUploadBackdrop(e) {
+  if (e.target === document.getElementById('weeklyUploadModal')) closeWeeklyUpload();
+}
+
+function handleWeeklyFileSelect(e) {
+  var f = e.target.files[0];
+  if (f) setWeeklyFile(f);
+}
+
+function handleWeeklyDrop(e) {
+  e.preventDefault();
+  document.getElementById('weeklyDropArea').classList.remove('drag');
+  var f = e.dataTransfer.files[0];
+  if (f && f.type === 'application/pdf') {
+    setWeeklyFile(f);
+  } else {
+    var err = document.getElementById('weeklyUploadError');
+    err.textContent = 'PDF 파일만 등록 가능합니다';
+    err.className = 'edit-error show';
+  }
+}
+
+function setWeeklyFile(f) {
+  _weeklyFile = f;
+  var nm = document.getElementById('weeklySelectedName');
+  nm.textContent = '📄 ' + f.name + '  (' + Math.round(f.size / 1024) + 'KB)';
+  nm.style.display = 'block';
+  var btn = document.getElementById('weeklyUploadBtn');
+  btn.disabled = false;
+  btn.style.opacity = '1';
+  document.getElementById('weeklyUploadError').className = 'edit-error';
+}
+
+async function uploadWeeklyFile() {
+  if (!_weeklyFile) return;
+  var btn   = document.getElementById('weeklyUploadBtn');
+  var prog  = document.getElementById('weeklyUploadProgress');
+  var errEl = document.getElementById('weeklyUploadError');
+  btn.disabled = true; btn.style.opacity = '0.45';
+  errEl.className = 'edit-error';
+
+  var ts           = new Date().toISOString().replace(/[-T:.Z]/g,'').substring(0,15);
+  // Storage 키는 ASCII만 허용(한글 불가) → 타임스탬프+확장자. 원본명은 wn_title에 보존
+  var ext          = (_weeklyFile.name.match(/\.[^.]+$/) || ['.pdf'])[0].toLowerCase();
+  var safeFileName = ts + ext;
+
+  // Step 1: 서버(DB 함수)에서 서명 업로드 URL 발급
+  prog.textContent = '업로드 URL 발급 중...';
+  prog.className = 'upload-progress show';
+
+  var urlResult = await callRpc('get_weekly_upload_url', {
+    p_session_token: getToken(),
+    p_filename: safeFileName
+  });
+  if (!urlResult || urlResult.error) {
+    prog.className = 'upload-progress';
+    errEl.textContent = '업로드 URL 발급 실패: ' + (urlResult && urlResult.error || '서버 오류');
+    errEl.className = 'edit-error show';
+    btn.disabled = false; btn.style.opacity = '1';
+    return;
+  }
+
+  // Step 2: 서명 URL로 파일 직접 업로드
+  // Supabase 응답: { url: "/object/upload/sign/weekly-pdfs/..?token=.." }
+  prog.textContent = '파일 업로드 중...';
+  try {
+    var signedPath = urlResult.url || urlResult.signedURL || urlResult.signedUrl || '';
+    if (!signedPath) throw new Error('서명 URL 응답 형식 오류: ' + JSON.stringify(urlResult));
+    var signedUrl = signedPath.indexOf('http') === 0
+      ? signedPath
+      : SUPABASE_URL + '/storage/v1' + (signedPath.charAt(0) === '/' ? '' : '/') + signedPath;
+    var resp = await fetch(signedUrl, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/pdf' },
+      body: _weeklyFile
+    });
+    if (!resp.ok) {
+      var errText = await resp.text();
+      throw new Error('HTTP ' + resp.status + ' — ' + errText);
+    }
+  } catch(e) {
+    prog.className = 'upload-progress';
+    errEl.textContent = '파일 업로드 실패: ' + e.message;
+    errEl.className = 'edit-error show';
+    btn.disabled = false; btn.style.opacity = '1';
+    return;
+  }
+
+  // Step 3: DB 메타 등록
+  prog.textContent = 'DB 등록 중...';
+  var regResult = await callRpc('register_weekly', {
+    p_session_token: getToken(),
+    p_title:         _weeklyFile.name,
+    p_file_path:     safeFileName
+  });
+
+  prog.className = 'upload-progress';
+  if (!regResult || !regResult.success) {
+    errEl.textContent = 'DB 등록 실패: ' + (regResult && regResult.error || '서버 오류');
+    errEl.className = 'edit-error show';
+    btn.disabled = false; btn.style.opacity = '1';
+    return;
+  }
+
+  closeWeeklyUpload();
+  loadAdminWeekly();
+}
+
+async function toggleWeeklyHidden(id, hidden) {
+  var r = await callRpc('toggle_weekly_hidden', {
+    p_session_token: getToken(), p_id: id, p_hidden: hidden
+  });
+  if (r && r.success) loadAdminWeekly();
+  else alert('변경 실패');
+}
+
+async function deleteWeekly(id) {
+  if (!confirm('삭제하시겠습니까?\n(목록 + 저장된 PDF 파일이 함께 삭제됩니다)')) return;
+  var r = await callRpc('delete_weekly', { p_session_token: getToken(), p_id: id });
+  if (r && r.success) loadAdminWeekly();
+  else alert('삭제 실패: ' + (r && r.error || '서버 오류'));
 }
 
 // ─────────────────────────────────────────────
@@ -744,6 +999,7 @@ window.addEventListener('load', async function() {
   if (!data) return; // 네트워크 오류 — 로그인 폼으로 (세션 유지)
   renderDashboard(data);
   loadAdminNotices();
+  loadAdminWeekly();
   startIdleTimer();
 });
 
@@ -779,6 +1035,7 @@ async function doLogin() {
 
   if (!data || data.error) { showLoginError('대시보드 로드 실패'); return; }
   renderDashboard(data);
+  loadAdminWeekly();
   startIdleTimer();
 }
 
