@@ -294,7 +294,7 @@
                 50%  { transform: scale(1.12); opacity: 0.78; }
                 100% { transform: scale(1);    opacity: 1; }
             }
-            .va-panel { flex-direction: column; filter: none; transition: opacity 0.3s ease; }
+            .va-panel { flex-direction: column; filter: none; transition: opacity 0.3s ease; transform: translateZ(0); will-change: opacity; }
             .va-content { display: none; padding: 10px 16px 20px; }
             .va-panel.va-open .va-content { display: block; opacity: 1; }
             .va-panel.va-open .va-go { position: absolute; top: 10px; right: 16px; font-size: 13px; }
@@ -1898,7 +1898,6 @@ function weeklyRowHtml(r) {
         : '<span class="n-badge n-none">New</span>';
     return '<li><a href="#" class="w-row" data-id="' + r.wn_id + '" data-title="' + ttl + '" data-path="' + path + '" onclick="return handleWeeklyClick(event)">'
          + badge
-         + '<span class="w-spacer"></span>'
          + '<div class="w-info">'
          + '<div class="w-title">' + ttl + '</div>'
          + '<div class="w-meta">조회 ' + (r.wn_readcnt||0) + '</div>'
