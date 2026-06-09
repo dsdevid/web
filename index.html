@@ -69,7 +69,7 @@
         }
 
         .nav-logo img {
-            height: 22px;
+            height: 41px;
             object-fit: contain;
             filter: brightness(0) invert(1);
             display: block;
@@ -492,6 +492,8 @@
         .n-et { display: flex; align-items: center; gap: 0; flex: 1; min-width: 0; }
         .n-row:last-child { border-bottom: none; }
         .n-row:hover { background: var(--parchment); border-left-color: var(--blue); padding-left: 11px; }
+        .n-row.n-row-pin { background: rgba(29,111,232,0.06); }
+        .n-row.n-row-pin:hover { background: rgba(29,111,232,0.12); }
 
         .n-emoji {
             font-size: 17px;
@@ -525,7 +527,7 @@
             font-weight: 800;
             text-shadow: 0 1px 3px rgba(0,0,0,0.6);
         }
-        .n-none { visibility: hidden; }
+        .n-none { color: #ccc; font-size: 16px; font-weight: 900; background: none; padding: 0; width: 30px; }
 
         .n-title {
             font-size: 13.5px;
@@ -1769,8 +1771,8 @@ function renderNoticeRows(ul, rows) {
             ? '<span class="n-badge n-pin">고정</span>'
             : isToday(r.textnotice_date)
                 ? '<span class="n-badge n-new">New</span>'
-                : '<span class="n-badge n-none">고정</span>';
-        return '<li><a href="#" class="n-row" data-id="' + r.textnotice_id + '">' +
+                : '<span class="n-badge n-none">○</span>';
+        return '<li><a href="#" class="n-row' + (r.textnotice_pin ? ' n-row-pin' : '') + '" data-id="' + r.textnotice_id + '">' +
                badge +
                '<span class="n-et"><span class="n-emoji"><span class="' + em.anim + '">' + em.emoji + '</span></span><span class="n-title">' + esc(r.textnotice_title||'') + '</span></span>' +
                '<span class="n-date">' + d + '</span></a></li>';
@@ -1919,7 +1921,7 @@ function weeklyRowHtml(r) {
     var path  = esc(r.wn_file_path || '');
     var badge = isToday(r.wn_date)
         ? '<span class="n-badge n-new">New</span>'
-        : '<span class="n-badge n-none">New</span>';
+        : '<span class="n-badge n-none">○</span>';
     return '<li><a href="#" class="w-row" data-id="' + r.wn_id + '" data-title="' + ttl + '" data-path="' + path + '" onclick="return handleWeeklyClick(event)">'
          + badge
          + '<div class="w-info">'
