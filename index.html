@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>강남대성기숙 의대관</title>
+    <link rel="preload" as="image" href="img/notice.jpg">
+    <link rel="preload" as="image" href="img/weekly.jpg">
+    <link rel="preload" as="image" href="img/rules.jpg">
+    <link rel="preload" as="image" href="img/statistics.jpg">
+    <link rel="preload" as="image" href="img/penalty.jpg">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
     <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
     <script>
@@ -294,12 +299,11 @@
                 50%  { transform: scale(1.12); opacity: 0.78; }
                 100% { transform: scale(1);    opacity: 1; }
             }
-            .va-panel { flex-direction: column; filter: none; opacity: 1; transition: none; transform: none; will-change: auto; }
-            .va-panel::before { content: ''; position: absolute; inset: 0; background: rgba(0,0,0,0.18); pointer-events: none; transition: opacity 0.25s ease; z-index: 0; }
-            .va-panel.va-open::before { opacity: 0; }
-            .va-bar { position: relative; z-index: 1; }
-            .va-content { position: relative; z-index: 1; display: flex; max-height: 0; overflow: hidden; padding: 0 16px; opacity: 0; transition: max-height 0.35s ease, padding 0.35s ease, opacity 0.25s ease; }
-            .va-panel.va-open .va-content { max-height: 280px; padding: 10px 16px 20px; opacity: 1; transition-delay: 0s; }
+            .va-panel { flex-direction: column; filter: none; transition: opacity 0.25s ease; transform: none; will-change: auto; }
+            .va-panel::before { display: none; }
+            .va-bar { position: relative; }
+            .va-content { display: flex; max-height: 0; overflow: hidden; padding: 0 16px; opacity: 1; transition: max-height 0.35s ease, padding 0.35s ease; }
+            .va-panel.va-open .va-content { max-height: 280px; padding: 10px 16px 20px; transition-delay: 0s; }
             .va-panel.va-open .va-go { position: absolute; top: 10px; right: 16px; font-size: 13px; }
             .va-panel.va-open .va-desc p { margin: 0; }
         }
