@@ -294,7 +294,9 @@
                 50%  { transform: scale(1.12); opacity: 0.78; }
                 100% { transform: scale(1);    opacity: 1; }
             }
-            .va-panel { flex-direction: column; filter: none; transition: opacity 0.3s ease; transform: translateZ(0); will-change: opacity; }
+            .va-panel { flex-direction: column; filter: none; opacity: 1; transition: none; transform: none; will-change: auto; }
+            .va-panel::before { content: ''; position: absolute; inset: 0; background: rgba(0,0,0,0.18); pointer-events: none; transition: opacity 0.3s ease; }
+            .va-panel.va-open::before { opacity: 0; }
             .va-content { display: none; padding: 10px 16px 20px; }
             .va-panel.va-open .va-content { display: block; opacity: 1; }
             .va-panel.va-open .va-go { position: absolute; top: 10px; right: 16px; font-size: 13px; }
