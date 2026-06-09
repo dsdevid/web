@@ -178,7 +178,7 @@
             background-position: center;
             background-blend-mode: multiply;
             transition: flex-grow 0.5s ease, opacity 0.4s ease, filter 0.4s ease;
-            opacity: 0.8;
+            opacity: 0.85;
             filter: blur(1px);
         }
         .va-panel + .va-panel { margin-left: -28px; }
@@ -400,20 +400,36 @@
         }
 
         .u-card-head {
-            padding: 0 24px;
-            height: 57px;
+            padding: 0 20px;
+            height: 53px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             border-bottom: 1px solid var(--hairline);
-            background: #d8d8dc;
+            background: transparent;
         }
 
         .u-title {
+            display: flex;
+            flex-direction: row;
+            align-items: flex-end;
+            padding-left: 12px;
+            border-left: 6px solid var(--blue);
+            gap: 7px;
             font-size: 21px;
             font-weight: 600;
             letter-spacing: 0.231px;
             color: var(--ink);
+            line-height: 1;
+        }
+
+        .u-title .u-sub {
+            font-size: 10px;
+            font-weight: 400;
+            letter-spacing: 0.6px;
+            color: var(--ink-48);
+            text-transform: uppercase;
+            padding-bottom: 2px;
         }
 
         .u-badge {
@@ -432,50 +448,91 @@
             text-decoration: none;
         }
 
+        /* Notice — keyframes */
+        @keyframes n-bounce    { 0%,100% { transform: translateY(0); animation-timing-function: cubic-bezier(.8,0,1,1); } 50% { transform: translateY(-5px); animation-timing-function: cubic-bezier(0,0,.2,1); } }
+        @keyframes n-shake     { 0%,100% { transform: translateX(0); } 20% { transform: translateX(-4px); } 40% { transform: translateX(4px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(4px); } }
+        @keyframes n-wobble    { 0%,100% { transform: rotate(0deg); } 20% { transform: rotate(-10deg); } 40% { transform: rotate(10deg); } 60% { transform: rotate(-6deg); } 80% { transform: rotate(6deg); } }
+        @keyframes n-swing     { 0%,100% { transform: rotate(0deg); } 25% { transform: rotate(-15deg); } 75% { transform: rotate(15deg); } }
+        @keyframes n-spin      { to { transform: rotate(360deg); } }
+        @keyframes n-tada      { 0%,100% { transform: scale(1) rotate(0deg); } 20%,80% { transform: scale(1.1) rotate(3deg); } 30%,50%,70% { transform: scale(1.1) rotate(-3deg); } }
+        @keyframes n-pulse     { 0%,100% { opacity: 1; } 50% { opacity: .45; } }
+        @keyframes n-heartbeat { 0%,100% { transform: scale(1); } 14% { transform: scale(1.25); } 28% { transform: scale(1); } 42% { transform: scale(1.25); } 56% { transform: scale(1); } }
+
+        .na-bounce    { animation: n-bounce    1s infinite; display: inline-block; }
+        .na-shake     { animation: n-shake     .9s ease-in-out infinite; display: inline-block; }
+        .na-wobble    { animation: n-wobble    1.2s ease-in-out infinite; display: inline-block; }
+        .na-swing     { animation: n-swing     1.2s ease-in-out infinite; display: inline-block; }
+        .na-spin      { animation: n-spin      2.4s linear infinite; display: inline-block; }
+        .na-tada      { animation: n-tada      1.8s ease-in-out infinite; display: inline-block; }
+        .na-pulse     { animation: n-pulse     1.6s ease-in-out infinite; display: inline-block; }
+        .na-heartbeat { animation: n-heartbeat 1.4s ease-in-out infinite; display: inline-block; }
+
         /* Notice */
         .notice-list { list-style: none; }
 
         .n-row {
             display: flex;
             align-items: center;
-            padding: 13px 24px;
+            padding: 11px 20px 11px 14px;
             border-bottom: 1px solid var(--divider);
+            border-left: 3px solid transparent;
             text-decoration: none;
-            gap: 10px;
-            transition: background 0.1s;
+            gap: 9px;
+            transition: background 0.15s, border-left-color 0.15s, padding-left 0.15s;
             cursor: pointer;
         }
-
+        .n-et { display: flex; align-items: center; gap: 0; flex: 1; min-width: 0; }
         .n-row:last-child { border-bottom: none; }
-        .n-row:hover { background: var(--parchment); }
+        .n-row:hover { background: var(--parchment); border-left-color: var(--blue); padding-left: 11px; }
 
-        .n-badge {
-            font-size: 10px;
-            font-weight: 600;
-            padding: 3px 7px;
-            border-radius: 5px;
-            white-space: nowrap;
+        .n-emoji {
+            font-size: 17px;
+            width: 26px;
+            text-align: center;
             flex-shrink: 0;
+            line-height: 1;
         }
 
-        .n-pin { background: #fff3cd; color: #856404; }
-        .n-new { background: #d1f5d3; color: #1a6625; }
-        .n-gen { background: var(--parchment); color: var(--ink-48); }
+        .n-badge {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 20px;
+            white-space: nowrap;
+            flex-shrink: 0;
+            letter-spacing: 0.2px;
+            width: 30px;
+            text-align: center;
+        }
+        .n-pin {
+            background: url('img/accent.png') center/cover no-repeat;
+            color: #fff;
+            font-size: 13px;
+            font-weight: 800;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+        }
+        .n-new {
+            background: url('img/accentL.png') center/cover no-repeat;
+            color: #fff;
+            font-weight: 800;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+        }
+        .n-none { visibility: hidden; }
 
         .n-title {
-            flex: 1;
-            font-size: 14px;
+            font-size: 13.5px;
             font-weight: 400;
-            letter-spacing: -0.224px;
+            letter-spacing: -0.2px;
             color: var(--ink);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
+        .n-row:hover .n-title { font-weight: 500; }
 
         .n-date {
-            font-size: 12px;
-            letter-spacing: -0.12px;
+            font-size: 11.5px;
+            letter-spacing: -0.1px;
             color: var(--ink-48);
             white-space: nowrap;
             flex-shrink: 0;
@@ -487,12 +544,15 @@
         .w-row {
             display: flex;
             align-items: center;
-            padding: 12px 24px;
+            padding: 11px 20px 11px 14px;
             border-bottom: 1px solid var(--divider);
+            border-left: 3px solid transparent;
             text-decoration: none;
-            gap: 14px;
-            transition: background 0.1s;
+            gap: 9px;
+            transition: background 0.15s, border-left-color 0.15s;
         }
+        .w-row:hover { border-left-color: var(--blue); }
+        .w-spacer { width: 26px; flex-shrink: 0; }
 
         .w-row:last-child { border-bottom: none; }
         .w-row:hover { background: var(--parchment); }
@@ -723,26 +783,32 @@
         }
 
         /* Search */
-        .search-wrap { padding: 16px 24px; }
+        .search-wrap {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            padding: 16px;
+        }
 
         .search-row {
             display: flex;
+            align-items: center;
             gap: 8px;
-            margin-bottom: 10px;
+            width: 100%;
         }
 
         .search-field {
             flex: 1;
-            padding: 11px 16px;
-            border: 1px solid rgba(0,0,0,0.08);
-            border-radius: 9999px;
-            font-size: 14px;
+            padding: 8px 14px;
+            border: 1px solid rgba(0,0,0,0.12);
+            border-radius: 6px;
+            font-size: 13px;
             font-family: inherit;
             letter-spacing: -0.224px;
             color: var(--ink);
             background: var(--canvas);
             outline: none;
-            height: 44px;
+            height: 36px;
         }
 
         .search-field:focus {
@@ -752,14 +818,14 @@
         }
 
         .search-go {
-            width: 44px;
-            height: 44px;
+            width: 26px;
+            height: 26px;
             background: var(--ink);
             color: #fff;
             border: none;
             border-radius: 9999px;
             cursor: pointer;
-            font-size: 15px;
+            font-size: 11px;
             flex-shrink: 0;
             transition: transform 0.1s;
         }
@@ -1155,7 +1221,7 @@
             <!-- Notice -->
             <div class="u-card" id="notice">
                 <div class="u-card-head">
-                    <span class="u-title">공지사항</span>
+                    <span class="u-title">공지사항<span class="u-sub">Announcements</span></span>
                 </div>
                 <!-- 페이지당 4건, 5건 이상이면 하단 페이지네이션 -->
                 <ul class="notice-list" id="noticePinList"></ul>
@@ -1168,7 +1234,7 @@
             <!-- Weekly Notice -->
             <div class="u-card" id="weekly">
                 <div class="u-card-head">
-                    <span class="u-title">주간공지<span class="u-badge">PDF</span></span>
+                    <span class="u-title">주간공지<span class="u-sub">Weekly Notice</span></span>
                 </div>
                 <ul class="weekly-list" id="weeklyHomeList">
                     <li style="padding:28px;text-align:center;color:var(--ink-48);font-size:13px">로딩 중...</li>
@@ -1208,9 +1274,9 @@
         <aside class="sidebar-col">
 
             <!-- Search -->
-            <div class="u-card" id="search" style="height:140px;">
+            <div class="u-card" id="search" style="height:121px;display:flex;flex-direction:column;">
                 <div class="u-card-head">
-                    <span class="u-title">검 색</span>
+                    <span class="u-title">검 색<span class="u-sub">Search</span></span>
                 </div>
                 <div class="search-wrap">
                     <div class="search-row">
@@ -1223,7 +1289,7 @@
             <!-- Rules Preview -->
             <div class="u-card" id="rules">
                 <div class="u-card-head">
-                    <span class="u-title">학원규정</span>
+                    <span class="u-title">학원규정<span class="u-sub">Rules</span></span>
                 </div>
                 <div class="rules-wrap">
                     <div class="rule-cat">생활 규정</div>
@@ -1630,6 +1696,18 @@ document.addEventListener('keydown', function(e) {
 // 공지사항 DB 연동
 // ─────────────────────────────────────────────
 var _notices = [];
+var NOTICE_EMOJI_POOL = [
+    { emoji: '😊', anim: 'na-wobble'    },
+    { emoji: '😢', anim: 'na-shake'     },
+    { emoji: '😉', anim: 'na-wobble'    },
+    { emoji: '🗣️', anim: 'na-swing'     },
+    { emoji: '🤩', anim: 'na-spin'      },
+    { emoji: '😂', anim: 'na-tada'      },
+    { emoji: '😮', anim: 'na-pulse'     },
+    { emoji: '🥹', anim: 'na-heartbeat' },
+    { emoji: '😎', anim: 'na-bounce'    },
+    { emoji: '🤔', anim: 'na-swing'     },
+];
 
 async function loadNotices() {
     var list = await callRpc('get_notices_public', {});
@@ -1662,13 +1740,15 @@ function renderNoticeRows(ul, rows) {
     if (!rows.length) { ul.innerHTML = ''; return; }
     ul.innerHTML = rows.map(function(r) {
         var d = r.textnotice_date ? r.textnotice_date.substring(2,10).replace(/-/g,'.') : '';
+        var em = NOTICE_EMOJI_POOL[r.textnotice_id % NOTICE_EMOJI_POOL.length];
         var badge = r.textnotice_pin
             ? '<span class="n-badge n-pin">고정</span>'
             : isToday(r.textnotice_date)
-                ? '<span class="n-badge n-new">신규</span>'
-                : '<span class="n-badge" style="visibility:hidden">일반</span>';
+                ? '<span class="n-badge n-new">New</span>'
+                : '<span class="n-badge n-none">고정</span>';
         return '<li><a href="#" class="n-row" data-id="' + r.textnotice_id + '">' +
-               badge + '<span class="n-title">' + esc(r.textnotice_title||'') + '</span>' +
+               badge +
+               '<span class="n-et"><span class="n-emoji"><span class="' + em.anim + '">' + em.emoji + '</span></span><span class="n-title">' + esc(r.textnotice_title||'') + '</span></span>' +
                '<span class="n-date">' + d + '</span></a></li>';
     }).join('');
 }
@@ -1814,10 +1894,11 @@ function weeklyRowHtml(r) {
     var ttl   = esc(r.wn_title || '');
     var path  = esc(r.wn_file_path || '');
     var badge = isToday(r.wn_date)
-        ? '<span class="n-badge n-new">신규</span>'
-        : '<span class="n-badge" style="visibility:hidden">신규</span>';
+        ? '<span class="n-badge n-new">New</span>'
+        : '<span class="n-badge n-none">New</span>';
     return '<li><a href="#" class="w-row" data-id="' + r.wn_id + '" data-title="' + ttl + '" data-path="' + path + '" onclick="return handleWeeklyClick(event)">'
          + badge
+         + '<span class="w-spacer"></span>'
          + '<div class="w-info">'
          + '<div class="w-title">' + ttl + '</div>'
          + '<div class="w-meta">조회 ' + (r.wn_readcnt||0) + '</div>'
