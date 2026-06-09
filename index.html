@@ -1675,9 +1675,20 @@ function updateNavGuest() {
     applyAccess();
 }
 
-// 페이지 로드 — 권한 적용 + 학생 세션 검증 후 복원
+// 페이지 로드 — 권한 적용 + 관리자/학생 세션 검증 후 복원
 (async function() {
     applyAccess();
+
+    // 관리자 세션 검증 — 만료/잔존 adm_id 자동 제거
+    if (localStorage.getItem('adm_id')) {
+        var admToken = localStorage.getItem('adm_token');
+        var ar = admToken ? await callRpc('touch_admin_session', { p_session_token: admToken }) : null;
+        if (!ar || !ar.success) {
+            ['adm_id','adm_name','adm_super','adm_token'].forEach(function(k){ localStorage.removeItem(k); });
+            applyAccess();
+        }
+    }
+
     var sess = sessionStorage.getItem('std_session');
     if (!sess) return;
     var r = await callRpc('validate_session', { p_session_id: sess });
