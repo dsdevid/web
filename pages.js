@@ -102,17 +102,18 @@ function applyAccess() {
   });
   if (last) last.classList.add('va-last');
 
-  // va-open 없는 경우 (숨김 전환 등) 첫 번째 보이는 패널을 선택 상태로 복원
+  // 선택 패널이 숨겨졌으면(예: 관리자→게스트 전환) 첫 번째 보이는 패널(공지사항) 강제 선택
+  // 숨겨진 패널의 va-open 은 무효로 보고, 보이는 패널 중 선택이 없을 때만 복원
   var panels = document.querySelectorAll('.va-panel');
-  var hasOpen = false;
-  panels.forEach(function (pan) { if (pan.classList.contains('va-open')) hasOpen = true; });
-  if (!hasOpen) {
-    for (var i = 0; i < panels.length; i++) {
-      if (panels[i].style.display !== 'none') {
-        panels[i].classList.add('va-open');
-        break;
-      }
-    }
+  var openVisible = false, firstVisible = null;
+  panels.forEach(function (pan) {
+    var visible = pan.style.display !== 'none';
+    if (visible && !firstVisible) firstVisible = pan;
+    if (visible && pan.classList.contains('va-open')) openVisible = true;
+  });
+  if (!openVisible && firstVisible) {
+    panels.forEach(function (pan) { pan.classList.remove('va-open'); });
+    firstVisible.classList.add('va-open');
   }
 }
 

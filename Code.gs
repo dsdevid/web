@@ -1,14 +1,18 @@
 // =============================================
 // 설정값 - 환경에 맞게 수정
 // =============================================
-// SUPABASE_KEY(service_role)는 코드에 평문 저장 금지 — GAS 스크립트 속성에서 조회.
-//   등록: GAS 편집기 → 프로젝트 설정(⚙) → 스크립트 속성 → 속성 'SUPABASE_KEY' 값 입력
-const CONFIG = {
-  SUPABASE_URL  : 'https://rwplqifhmlduukipnksm.supabase.co',
-  SUPABASE_KEY  : PropertiesService.getScriptProperties().getProperty('SUPABASE_KEY'),
-  SHEET_NAME    : '공지사항',
-  TABLE_NAME    : 'user_textnotice',
-};
+// GAS_TOKEN, WORKER_URL은 코드에 평문 저장 금지 — GAS 스크립트 속성에서 조회.
+//   등록: GAS 편집기 → 프로젝트 설정(⚙) → 스크립트 속성 →
+//     'GAS_TOKEN' : Cloudflare Worker 호출 전용 토큰
+//     'WORKER_URL': https://notice-gateway.XXX.workers.dev
+function getConfig_() {
+  const props = PropertiesService.getScriptProperties();
+  return {
+    GAS_TOKEN  : props.getProperty('GAS_TOKEN'),
+    WORKER_URL : props.getProperty('WORKER_URL'),
+    SHEET_NAME : '공지사항',
+  };
+}
 
 // 열 인덱스 (1-based)
 const COL = {
@@ -32,7 +36,7 @@ function onSheetEdit(e) {
   const isCheckCol    = range.getColumn() === COL.CHECK;
   const isChecked     = value === 'TRUE';
   const sheet         = source.getActiveSheet();
-  const isTargetSheet = sheet.getName() === CONFIG.SHEET_NAME;
+  const isTargetSheet = sheet.getName() === getConfig_().SHEET_NAME;
   const isDataRow     = range.getRow() > 1;
 
   if (!isCheckCol || !isChecked || !isTargetSheet || !isDataRow) return;
@@ -94,11 +98,11 @@ function sendRowToSupabase(sheet, row) {
         return;
       }
 
-      responseData = supabaseRequest_('PATCH', `?textnotice_id=eq.${existingId}`, payload);
+      responseData = workerRequest_('update', `?textnotice_id=eq.${existingId}`, payload);
       showToast_(sheet, row, `✅ 업데이트 완료 (id: ${existingId})`);
     } else {
       // 신규 INSERT
-      responseData = supabaseRequest_('POST', '', payload);
+      responseData = workerRequest_('insert', '', payload);
       // 반환된 id를 B열에 기록
       if (responseData && responseData[0]?.textnotice_id) {
         sheet.getRange(row, COL.ID).setValue(responseData[0].textnotice_id);
@@ -117,25 +121,19 @@ function sendRowToSupabase(sheet, row) {
 }
 
 // =============================================
-// Supabase REST API 요청 공통 함수
+// Worker 경유 요청 공통 함수 (service_role은 Worker에만)
 // =============================================
-function supabaseRequest_(method, query, payload) {
-  const url = `${CONFIG.SUPABASE_URL}/rest/v1/${CONFIG.TABLE_NAME}${query}`;
-
+function workerRequest_(action, query, payload) {
+  const cfg = getConfig_();
   const options = {
-    method      : method,
+    method      : 'POST',
     contentType : 'application/json',
-    headers     : {
-      'apikey'        : CONFIG.SUPABASE_KEY,
-      'Authorization' : `Bearer ${CONFIG.SUPABASE_KEY}`,
-      'Prefer'        : 'return=representation',
-      'Content-Type'  : 'application/json',  // ← 명시적 추가
-    },
-    payload     : JSON.stringify(payload),
+    headers     : { 'X-Call-Token': cfg.GAS_TOKEN },
+    payload     : JSON.stringify({ action, query, payload }),
     muteHttpExceptions: true,
   };
 
-  const response = UrlFetchApp.fetch(url, options);
+  const response = UrlFetchApp.fetch(cfg.WORKER_URL, options);
   const statusCode = response.getResponseCode();
   const responseText = response.getContentText();
 
@@ -166,19 +164,13 @@ function setRowColor_(sheet, row, color) {
        .setBackground(color);
 }
 
-// DB에서 단일 행 조회
+// DB에서 단일 행 조회 (Worker 경유)
 function getFromSupabase_(query) {
-  const url = `${CONFIG.SUPABASE_URL}/rest/v1/${CONFIG.TABLE_NAME}${query}`;
-  const response = UrlFetchApp.fetch(url, {
-    method  : 'GET',
-    headers : {
-      'apikey'        : CONFIG.SUPABASE_KEY,
-      'Authorization' : `Bearer ${CONFIG.SUPABASE_KEY}`,
-    },
-    muteHttpExceptions: true,
-  });
-  if (response.getResponseCode() !== 200) return null;
-  return JSON.parse(response.getContentText());
+  try {
+    return workerRequest_('get', query, null);
+  } catch {
+    return null;
+  }
 }
 
 // 시트 데이터와 DB 데이터 변경 여부 비교

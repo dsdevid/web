@@ -6,12 +6,17 @@
 const AUTO_SYNC    = false;   // true: 편집 시 자동, false: 수동(syncStudentsToSupabase 직접 실행)
 
 const TARGET_SHEET = '마스터';
-const SUPABASE_URL = 'https://rwplqifhmlduukipnksm.supabase.co';
-// ⚠ secret/service_role 키 (서버 전용 — 절대 브라우저 노출/커밋 금지).
-//    sync_students 는 anon 미부여 → 서버 키 필요.
-//    코드에 평문 저장 금지 → GAS 스크립트 속성에서 조회.
-//    등록: GAS 편집기 → 프로젝트 설정(⚙) → 스크립트 속성 → 'SUPABASE_KEY' 값 입력
-const SUPABASE_KEY = PropertiesService.getScriptProperties().getProperty('SUPABASE_KEY');
+// GAS_TOKEN, WORKER_URL은 코드에 평문 저장 금지 — GAS 스크립트 속성에서 조회.
+//   등록: GAS 편집기 → 프로젝트 설정(⚙) → 스크립트 속성 →
+//     'GAS_TOKEN' : Cloudflare Worker 호출 전용 토큰
+//     'WORKER_URL': https://notice-gateway.dshw.workers.dev
+function getConfig_() {
+  const props = PropertiesService.getScriptProperties();
+  return {
+    GAS_TOKEN  : props.getProperty('GAS_TOKEN'),
+    WORKER_URL : props.getProperty('WORKER_URL'),
+  };
+}
 
 // 시트 열 (0-based): B=학번, C=성명, D=성별, E=반, F=그룹
 const COL = { ID: 1, NAME: 2, SEX: 3, BAN: 4, PRT: 5 };
@@ -69,14 +74,12 @@ function syncStudentsToSupabase() {
 
   if (students.length === 0) { Logger.log('전송할 학생이 없습니다.'); return; }
 
-  const res = UrlFetchApp.fetch(`${SUPABASE_URL}/rest/v1/rpc/sync_students`, {
+  const cfg = getConfig_();
+  const res = UrlFetchApp.fetch(cfg.WORKER_URL, {
     method      : 'POST',
     contentType : 'application/json',
-    headers     : {
-      'apikey'        : SUPABASE_KEY,
-      'Authorization' : `Bearer ${SUPABASE_KEY}`
-    },
-    payload : JSON.stringify({ p_students: students }),  // RPC 인자명 p_students
+    headers     : { 'X-Call-Token': cfg.GAS_TOKEN },
+    payload     : JSON.stringify({ action: 'sync_students', payload: { p_students: students } }),
     muteHttpExceptions: true
   });
 

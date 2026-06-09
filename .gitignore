@@ -1,3 +1,4 @@
 # 비밀 키 평문 노출 방지 — 명세서는 git 추적 제외 (로컬 보관)
 기능명세서.md
 기능명세서1.md
+notice-gateway.worker.js

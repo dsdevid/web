@@ -178,7 +178,7 @@
             background-position: center;
             background-blend-mode: multiply;
             transition: flex-grow 0.5s ease, opacity 0.4s ease, filter 0.4s ease;
-            opacity: 0.6;
+            opacity: 0.8;
             filter: blur(1px);
         }
         .va-panel + .va-panel { margin-left: -28px; }
@@ -1512,6 +1512,7 @@ async function doAdminLogin() {
     localStorage.setItem('adm_super', r.admin_is_super_admin ? '1' : '0');
     localStorage.setItem('adm_token', r.session_token);
     closeLoginModal();
+    applyAccess();   // 메인페이지 즉시 admin 전체 노출 (새로고침 불필요)
     window.open('admin.html', 'dshw_admin', 'width=768,height=900');
 }
 
