@@ -101,6 +101,19 @@ function applyAccess() {
     if (pan.style.display !== 'none') last = pan;
   });
   if (last) last.classList.add('va-last');
+
+  // va-open 없는 경우 (숨김 전환 등) 첫 번째 보이는 패널을 선택 상태로 복원
+  var panels = document.querySelectorAll('.va-panel');
+  var hasOpen = false;
+  panels.forEach(function (pan) { if (pan.classList.contains('va-open')) hasOpen = true; });
+  if (!hasOpen) {
+    for (var i = 0; i < panels.length; i++) {
+      if (panels[i].style.display !== 'none') {
+        panels[i].classList.add('va-open');
+        break;
+      }
+    }
+  }
 }
 
 // 보호 페이지 가드 — 보호 페이지 최상단에서 호출. 미허가면 홈으로.
