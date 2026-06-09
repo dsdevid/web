@@ -4,12 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>강남대성기숙 의대관</title>
-    <link rel="preload" as="image" href="img/notice.jpg">
-    <link rel="preload" as="image" href="img/weekly.jpg">
-    <link rel="preload" as="image" href="img/rules.jpg">
-    <link rel="preload" as="image" href="img/statistics.jpg">
-    <link rel="preload" as="image" href="img/penalty.jpg">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
     <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
     <script>
         // 줌 차단 메인 = CSS touch-action: pan-x pan-y (body) — 핀치/더블탭 줌 차단, 스크롤은 허용
@@ -178,13 +173,19 @@
             overflow: hidden;
             color: #fff;
             background-color: var(--va-color);
-            background-image: var(--va-img, none);
-            background-size: cover;
-            background-position: center;
-            background-blend-mode: multiply;
             transition: flex-grow 0.5s ease, opacity 0.4s ease, filter 0.4s ease;
             opacity: 0.85;
             filter: blur(1px);
+        }
+        .va-bg-img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            mix-blend-mode: multiply;
+            pointer-events: none;
+            z-index: 0;
         }
         .va-panel + .va-panel { margin-left: -28px; }
         .va-panel:last-child { margin-right: -28px; }
@@ -1152,7 +1153,8 @@
 <!-- ── Vertical Accordion (HERO) ── -->
 <section class="v-acc-wrap">
     <div class="v-acc" id="vAcc">
-        <div class="va-panel va-open" style="--va-color:#1d6fe8;--va-comp:#e8961d;--va-img:url('img/notice.jpg')">
+        <div class="va-panel va-open" style="--va-color:#1d6fe8;--va-comp:#e8961d">
+            <img class="va-bg-img" src="img/notice.jpg" alt="" loading="eager">
             <div class="va-bar">
                 <div class="va-vtitle">공지사항</div>
                 <span class="va-new" id="noticeNewRibbon" style="display:none">New</span>
@@ -1164,7 +1166,8 @@
                 </div>
             </div>
         </div>
-        <div class="va-panel" style="--va-color:#d97706;--va-comp:#0668d9;--va-img:url('img/weekly.jpg')">
+        <div class="va-panel" style="--va-color:#d97706;--va-comp:#0668d9">
+            <img class="va-bg-img" src="img/weekly.jpg" alt="" loading="eager">
             <div class="va-bar">
                 <div class="va-vtitle">주간공지</div>
                 <span class="va-new" id="weeklyNewRibbon" style="display:none">New</span>
@@ -1176,7 +1179,8 @@
                 </div>
             </div>
         </div>
-        <div class="va-panel" style="--va-color:#7c3aed;--va-comp:#abed3a;--va-img:url('img/rules.jpg')">
+        <div class="va-panel" style="--va-color:#7c3aed;--va-comp:#abed3a">
+            <img class="va-bg-img" src="img/rules.jpg" alt="" loading="eager">
             <div class="va-bar">
                 <div class="va-vtitle">학원규정</div>
             </div>
@@ -1187,7 +1191,8 @@
                 </div>
             </div>
         </div>
-        <div class="va-panel" style="--va-color:#16a34a;--va-comp:#a3166f;--va-img:url('img/statistics.jpg')">
+        <div class="va-panel" style="--va-color:#16a34a;--va-comp:#a3166f">
+            <img class="va-bg-img" src="img/statistics.jpg" alt="" loading="eager">
             <div class="va-bar">
                 <div class="va-vtitle">통계현황</div>
             </div>
@@ -1198,7 +1203,8 @@
                 </div>
             </div>
         </div>
-        <div class="va-panel" style="--va-color:#0891b2;--va-comp:#b25208;--va-img:url('img/penalty.jpg')">
+        <div class="va-panel" style="--va-color:#0891b2;--va-comp:#b25208">
+            <img class="va-bg-img" src="img/penalty.jpg" alt="" loading="eager">
             <div class="va-bar">
                 <div class="va-vtitle">반별벌점현황</div>
             </div>
