@@ -76,7 +76,7 @@ CREATE TABLE IF NOT EXISTS logs (
   log_id        bigint      GENERATED ALWAYS AS IDENTITY,
   log_user_id   uuid,
   log_action    text        NOT NULL
-                CHECK (log_action IN ('login', 'logout', 'access', 'first_login')),
+                CHECK (log_action IN ('login', 'logout', 'access', 'first_login', 'change_password')),
   log_timestamp timestamptz NOT NULL DEFAULT now(),
 
   CONSTRAINT logs_pkey      PRIMARY KEY (log_id),
@@ -303,6 +303,72 @@ END;
 $$;
 
 
+-- 3-5b. change_student_password — 로그인 상태 자발적 비밀번호 변경
+--   active 세션 + 기존 비밀번호 검증 후 갱신. 현재 세션은 유지.
+--   보안: 기존비번 5회 오류 시 30분 잠금(무차별 대입 차단),
+--         변경 성공 시 다른 세션 전부 무효화(탈취 세션 강제 종료).
+CREATE OR REPLACE FUNCTION change_student_password(
+  p_session_id   text,
+  p_old_password text,
+  p_new_password text
+) RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_ses  sessions%ROWTYPE;
+  v_user user_master%ROWTYPE;
+BEGIN
+  SELECT * INTO v_ses FROM sessions WHERE ses_session_id = p_session_id;
+  IF NOT FOUND OR v_ses.ses_expires_at <= now() OR v_ses.ses_role <> 'active' THEN
+    RETURN jsonb_build_object('success', false, 'error', 'INVALID_SESSION');
+  END IF;
+
+  SELECT * INTO v_user FROM user_master WHERE mst_users = v_ses.ses_user_id;
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('success', false, 'error', 'INVALID_SESSION');
+  END IF;
+
+  -- 잠금 확인 (무차별 대입 차단)
+  IF v_user.mst_locked_until IS NOT NULL AND v_user.mst_locked_until > now() THEN
+    RETURN jsonb_build_object('success', false, 'error', 'LOCKED',
+      'locked_until', v_user.mst_locked_until);
+  END IF;
+
+  -- 기존 비밀번호 검증 (오류 시 실패 카운트 증가 + 5회 도달 시 30분 잠금)
+  IF v_user.mst_passwd_hash IS NULL
+     OR v_user.mst_passwd_hash <> crypt(p_old_password, v_user.mst_passwd_hash) THEN
+    UPDATE user_master SET
+      mst_login_fail_count = mst_login_fail_count + 1,
+      mst_locked_until = CASE
+        WHEN mst_login_fail_count + 1 >= 5 THEN now() + interval '30 minutes'
+        ELSE mst_locked_until
+      END
+    WHERE mst_users = v_user.mst_users;
+    RETURN jsonb_build_object('success', false, 'error', 'WRONG_PASSWORD');
+  END IF;
+
+  IF length(p_new_password) < 4 THEN
+    RETURN jsonb_build_object('success', false, 'error', 'TOO_SHORT');
+  END IF;
+
+  -- 변경 + 실패 카운트/잠금 초기화
+  UPDATE user_master SET
+    mst_passwd_hash      = crypt(p_new_password, gen_salt('bf', 10)),
+    mst_login_fail_count = 0,
+    mst_locked_until     = NULL
+  WHERE mst_users = v_user.mst_users;
+
+  -- 다른 세션 무효화 (현재 세션만 유지 → 탈취된 타 세션 강제 종료)
+  DELETE FROM sessions WHERE ses_user_id = v_user.mst_users AND ses_session_id <> p_session_id;
+
+  INSERT INTO logs (log_user_id, log_action) VALUES (v_user.mst_users, 'change_password');
+
+  RETURN jsonb_build_object('success', true);
+END;
+$$;
+
+
 -- 3-6. admin_reset_student_password — 관리자가 학생 임시 비밀번호 개별 지정
 --   기존 admin RPC 패턴(p_admin_id 로 admin_master 확인) 동일.
 --   지정 후 mst_is_first_login='Y' → 학생 첫 로그인 시 변경 강제.
@@ -423,5 +489,6 @@ $$;
 GRANT EXECUTE ON FUNCTION process_student_login(text, text, text)        TO anon;
 GRANT EXECUTE ON FUNCTION validate_session(text)                         TO anon;
 GRANT EXECUTE ON FUNCTION complete_first_login(text, text)               TO anon;
+GRANT EXECUTE ON FUNCTION change_student_password(text, text, text)      TO anon;
 GRANT EXECUTE ON FUNCTION logout_session(text)                           TO anon;
 GRANT EXECUTE ON FUNCTION admin_reset_student_password(text, text, text) TO anon;

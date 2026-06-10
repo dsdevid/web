@@ -431,6 +431,60 @@ GRANT EXECUTE ON FUNCTION logout_admin_session(text) TO anon;
 
 
 -- ============================================================
+-- 6-4. 관리자 비밀번호 변경 — 토큰 + 기존 비밀번호 검증 후 갱신
+--   보안: 기존비번 5회 오류 시 30분 잠금(무차별 대입 차단).
+--         관리자는 단일세션 모델(동시접속 차단)이라 별도 세션 무효화 불필요.
+-- ============================================================
+CREATE OR REPLACE FUNCTION change_admin_password(
+  p_session_token text,
+  p_old_password  text,
+  p_new_password  text
+) RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE v_admin admin_master%ROWTYPE;
+BEGIN
+  v_admin := _admin_session(p_session_token);
+  IF v_admin.admin_id IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'UNAUTHORIZED');
+  END IF;
+
+  -- 기존 비밀번호 검증 (오류 시 실패 카운트 증가 + 5회 도달 시 잠금)
+  IF v_admin.admin_passwd_hash IS NULL
+     OR v_admin.admin_passwd_hash <> crypt(p_old_password, v_admin.admin_passwd_hash) THEN
+    UPDATE admin_master SET
+      admin_login_fail_count = admin_login_fail_count + 1,
+      admin_status = CASE
+        WHEN admin_login_fail_count + 1 >= 5 THEN 'locked'
+        ELSE admin_status
+      END,
+      admin_locked_until = CASE
+        WHEN admin_login_fail_count + 1 >= 5 THEN now() + interval '30 minutes'
+        ELSE admin_locked_until
+      END
+    WHERE admin_id = v_admin.admin_id;
+    RETURN jsonb_build_object('success', false, 'error', 'WRONG_PASSWORD');
+  END IF;
+
+  IF length(p_new_password) < 4 THEN
+    RETURN jsonb_build_object('success', false, 'error', 'TOO_SHORT');
+  END IF;
+
+  UPDATE admin_master SET
+    admin_passwd_hash       = crypt(p_new_password, gen_salt('bf', 10)),
+    admin_passwd_changed_at = now(),
+    admin_login_fail_count  = 0
+  WHERE admin_id = v_admin.admin_id;
+
+  RETURN jsonb_build_object('success', true);
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION change_admin_password(text, text, text) TO anon;
+
+
+-- ============================================================
 -- 12. 주간공지 (weekly_notices)
 -- ============================================================
 -- Supabase Dashboard → Storage → New bucket 에서 아래 버킷 수동 생성:
