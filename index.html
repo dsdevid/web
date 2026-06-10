@@ -244,6 +244,8 @@
             animation: va-new-pulse 1.4s ease-in-out infinite;
         }
         .va-content {
+            position: relative;
+            z-index: 1;
             flex: 1;
             min-width: 0;
             display: flex;
@@ -253,9 +255,9 @@
             transition: opacity 0.3s ease;
         }
         .va-panel.va-open .va-content { opacity: 1; transition-delay: 0.15s; }
-        .va-h { font-size: 24px; font-weight: 700; letter-spacing: -0.374px; margin-bottom: 8px; color: #fff !important; }
-        .va-desc p { font-size: 14px; line-height: 1.6; color: #fff !important; max-width: 380px; }
-        .va-go { color: #fff !important; }
+        .va-h { font-size: 24px; font-weight: 700; letter-spacing: -0.374px; margin-bottom: 8px; color: #fff !important; text-shadow: 0 1px 4px rgba(0,0,0,0.75); }
+        .va-desc p { font-size: 14px; line-height: 1.6; color: #fff !important; max-width: 380px; text-shadow: 0 1px 4px rgba(0,0,0,0.75); }
+        .va-go { color: #fff !important; text-shadow: 0 1px 3px rgba(0,0,0,0.6); }
         .va-go {
             display: inline-block;
             margin-top: 14px;

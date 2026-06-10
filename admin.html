@@ -278,7 +278,7 @@
     .card {
       background: var(--canvas);
       border: 1px solid var(--hairline);
-      border-radius: 14px;
+      border-radius: 7px;
       overflow: hidden;
       margin-bottom: 16px;
     }
@@ -287,7 +287,7 @@
       height: 52px; padding: 0 20px;
       display: flex; align-items: center; justify-content: space-between;
       border-bottom: 1px solid var(--hairline);
-      background: #d8d8dc;
+      background: transparent;
     }
 
     .card-title { font-size: 15px; font-weight: 600; }
@@ -506,7 +506,7 @@
 
     <!-- 공지사항 CRUD -->
     <div class="card">
-      <div class="card-head" style="background:transparent">
+      <div class="card-head">
         <span class="card-title">공지사항</span>
         <button class="btn-add" onclick="openNoticeEdit(0)">+ 등록</button>
       </div>
