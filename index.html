@@ -173,9 +173,7 @@
             overflow: hidden;
             color: #fff;
             background-color: var(--va-color);
-            transition: flex-grow 0.5s ease, opacity 0.4s ease, filter 0.4s ease;
-            opacity: 0.85;
-            filter: blur(1px);
+            transition: flex-grow 0.5s ease;
         }
         .va-bg-img {
             position: absolute;
@@ -190,7 +188,9 @@
         .va-panel + .va-panel { margin-left: -28px; }
         .va-panel:last-child { margin-right: -28px; }
         .va-panel.va-last { margin-right: -28px; }   /* 마지막 보이는 패널(권한 숨김 대응) */
-        .va-panel.va-open { flex-grow: 6; opacity: 1; filter: none; }
+        .va-panel.va-open { flex-grow: 6; }
+        .va-vtitle { transition: filter 0.4s ease; }
+        .va-panel:not(.va-open) .va-vtitle { filter: blur(1px); }
         .va-bar {
             position: relative;
             flex-shrink: 0;
@@ -300,7 +300,7 @@
                 50%  { transform: scale(1.12); opacity: 0.78; }
                 100% { transform: scale(1);    opacity: 1; }
             }
-            .va-panel { flex-direction: column; filter: none; transition: opacity 0.25s ease; transform: none; will-change: auto; }
+            .va-panel { flex-direction: column; filter: none; transform: none; will-change: auto; }
             .va-panel::before { display: none; }
             .va-bar { position: relative; }
             .va-content { display: flex; max-height: 0; overflow: hidden; padding: 0 16px; opacity: 1; transition: max-height 0.35s ease, padding 0.35s ease; }
@@ -439,6 +439,19 @@
             text-transform: uppercase;
             padding-bottom: 2px;
         }
+
+        .u-title-brush {
+            background: url('img/brush_red.png') center / 100% 100% no-repeat;
+            color: #fff !important;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.45);
+            padding: 6px 14px 6px 12px;
+            border-radius: 2px;
+        }
+        .u-title-brush.u-title-brush-blue {
+            background-image: url('img/brush_blue.png');
+        }
+        .u-title-brush .u-sub,
+        .u-title-brush .u-badge { color: rgba(255,255,255,0.85) !important; }
 
         .u-badge {
             font-size: 12px;
@@ -1234,35 +1247,40 @@
         <div class="content-col">
 
             <!-- Notice -->
-            <div class="u-card" id="notice">
-                <div class="u-card-head">
-                    <span class="u-title">공지사항<span class="u-sub">Announcements</span></span>
+            <div id="notice" style="scroll-margin-top:56px;margin-bottom:20px;">
+                <div class="u-card-head" style="background:transparent;border:none;">
+                    <span class="u-title u-title-brush">공지사항<span class="u-sub">Announcements</span></span>
                 </div>
-                <!-- 페이지당 4건, 5건 이상이면 하단 페이지네이션 -->
-                <ul class="notice-list" id="noticePinList"></ul>
-                <div class="weekly-pagination" id="noticePagination" style="display:none"></div>
-                <div id="noticeEmpty" style="display:none;padding:20px 24px;text-align:center;color:var(--ink-muted);font-size:13px;">
-                    공지사항이 없습니다
+                <div class="u-card" style="margin-bottom:0;">
+                    <!-- 페이지당 4건, 5건 이상이면 하단 페이지네이션 -->
+                    <ul class="notice-list" id="noticePinList"></ul>
+                    <div class="weekly-pagination" id="noticePagination" style="display:none"></div>
+                    <div id="noticeEmpty" style="display:none;padding:20px 24px;text-align:center;color:var(--ink-muted);font-size:13px;">
+                        공지사항이 없습니다
+                    </div>
                 </div>
             </div>
 
             <!-- Weekly Notice -->
-            <div class="u-card" id="weekly">
-                <div class="u-card-head">
-                    <span class="u-title">주간공지<span class="u-sub">Weekly Notice</span></span>
+            <div id="weekly" style="scroll-margin-top:56px;margin-bottom:20px;">
+                <div class="u-card-head" style="background:transparent;border:none;">
+                    <span class="u-title u-title-brush">주간공지<span class="u-sub">Weekly Notice</span></span>
                 </div>
-                <ul class="weekly-list" id="weeklyHomeList">
-                    <li style="padding:28px;text-align:center;color:var(--ink-48);font-size:13px">로딩 중...</li>
-                </ul>
-                <div class="weekly-pagination" id="weeklyPagination" style="display:none"></div>
+                <div class="u-card" style="margin-bottom:0;">
+                    <ul class="weekly-list" id="weeklyHomeList">
+                        <li style="padding:28px;text-align:center;color:var(--ink-48);font-size:13px">로딩 중...</li>
+                    </ul>
+                    <div class="weekly-pagination" id="weeklyPagination" style="display:none"></div>
+                </div>
             </div>
 
             <!-- Stats Preview -->
-            <div class="u-card" id="stats">
-                <div class="u-card-head">
-                    <span class="u-title">통계 현황<span class="u-badge">전체 공개</span></span>
+            <div id="stats" style="scroll-margin-top:56px;margin-bottom:20px;">
+                <div class="u-card-head" style="background:transparent;border:none;">
+                    <span class="u-title u-title-brush u-title-brush-blue">통계 현황<span class="u-badge">전체 공개</span></span>
                     <a href="#" class="u-more">상세보기</a>
                 </div>
+                <div class="u-card" style="margin-bottom:0;">
                 <div class="stats-boxes">
                     <div class="stats-box">
                         <div class="sb-num">—</div>
@@ -1281,6 +1299,7 @@
                     </div>
                 </div>
                 <p class="stats-note">통계는 하루 1회 갱신됩니다. 로그인 시 개인 통계를 확인할 수 있습니다.</p>
+                </div>
             </div>
 
         </div>
@@ -1289,23 +1308,26 @@
         <aside class="sidebar-col">
 
             <!-- Search -->
-            <div class="u-card" id="search" style="height:121px;display:flex;flex-direction:column;">
-                <div class="u-card-head">
-                    <span class="u-title">검 색<span class="u-sub">Search</span></span>
+            <div id="search" style="scroll-margin-top:56px;margin-bottom:20px;">
+                <div class="u-card-head" style="background:transparent;border:none;">
+                    <span class="u-title u-title-brush">검 색<span class="u-sub">Search</span></span>
                 </div>
-                <div class="search-wrap">
-                    <div class="search-row">
-                        <input type="text" class="search-field" placeholder="제목, 내용 검색...">
-                        <button class="search-go">→</button>
+                <div class="u-card" style="margin-bottom:0;">
+                    <div class="search-wrap">
+                        <div class="search-row">
+                            <input type="text" class="search-field" placeholder="제목, 내용 검색...">
+                            <button class="search-go">→</button>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- Rules Preview -->
-            <div class="u-card" id="rules">
-                <div class="u-card-head">
-                    <span class="u-title">학원규정<span class="u-sub">Rules</span></span>
+            <div id="rules" style="scroll-margin-top:56px;margin-bottom:20px;">
+                <div class="u-card-head" style="background:transparent;border:none;">
+                    <span class="u-title u-title-brush">학원규정<span class="u-sub">Rules</span></span>
                 </div>
+                <div class="u-card" style="margin-bottom:0;">
                 <div class="rules-wrap">
                     <div class="rule-cat">생활 규정</div>
                     <div class="rule-ln"><span>소등 후 이동</span><span class="rule-pt">-2점</span></div>
@@ -1319,18 +1341,21 @@
                         <a href="#" style="font-size:14px;color:var(--blue);letter-spacing:-0.224px;text-decoration:none;">전체 규정 확인하기</a>
                     </div>
                 </div>
+                </div>
             </div>
 
             <!-- Stats Summary -->
-            <div class="u-card" id="penalty">
-                <div class="u-card-head">
-                    <span class="u-title">반별 벌점 현황</span>
+            <div id="penalty" style="scroll-margin-top:56px;margin-bottom:20px;">
+                <div class="u-card-head" style="background:transparent;border:none;">
+                    <span class="u-title u-title-brush u-title-brush-blue">반별 벌점 현황</span>
                     <a href="#stats" class="u-more">상세</a>
                 </div>
-                <div class="s-row"><span class="s-row-lbl">A반</span><span class="s-row-val">— 점</span></div>
-                <div class="s-row"><span class="s-row-lbl">B반</span><span class="s-row-val">— 점</span></div>
-                <div class="s-row"><span class="s-row-lbl">C반</span><span class="s-row-val">— 점</span></div>
-                <div class="s-row"><span style="font-size:11px;color:var(--ink-48);">통계 연동 후 표시됩니다</span></div>
+                <div class="u-card" style="margin-bottom:0;">
+                    <div class="s-row"><span class="s-row-lbl">A반</span><span class="s-row-val">— 점</span></div>
+                    <div class="s-row"><span class="s-row-lbl">B반</span><span class="s-row-val">— 점</span></div>
+                    <div class="s-row"><span class="s-row-lbl">C반</span><span class="s-row-val">— 점</span></div>
+                    <div class="s-row"><span style="font-size:11px;color:var(--ink-48);">통계 연동 후 표시됩니다</span></div>
+                </div>
             </div>
 
         </aside>
@@ -1768,7 +1793,7 @@ function renderNoticeRows(ul, rows) {
         var d = r.textnotice_date ? r.textnotice_date.substring(2,10).replace(/-/g,'.') : '';
         var em = NOTICE_EMOJI_POOL[r.textnotice_id % NOTICE_EMOJI_POOL.length];
         var badge = r.textnotice_pin
-            ? '<span class="n-badge n-pin">고정</span>'
+            ? '<span class="n-badge n-pin">필독</span>'
             : isToday(r.textnotice_date)
                 ? '<span class="n-badge n-new">New</span>'
                 : '<span class="n-badge n-none">○</span>';

@@ -506,7 +506,7 @@
 
     <!-- 공지사항 CRUD -->
     <div class="card">
-      <div class="card-head">
+      <div class="card-head" style="background:transparent">
         <span class="card-title">공지사항</span>
         <button class="btn-add" onclick="openNoticeEdit(0)">+ 등록</button>
       </div>
@@ -517,7 +517,7 @@
               <th class="col-l">제목</th>
               <th style="width:110px">등록일</th>
               <th style="width:56px">조회</th>
-              <th style="width:52px">고정</th>
+              <th style="width:52px">필독</th>
               <th style="width:52px">게시</th>
               <th style="width:56px">관리</th>
             </tr>
@@ -619,7 +619,7 @@
     <input id="editOwner" type="text" class="edit-input" placeholder="작성자 이름" maxlength="50">
 
     <div class="edit-checks">
-      <label><input type="checkbox" id="editPin"> 고정</label>
+      <label><input type="checkbox" id="editPin"> 필독</label>
       <label><input type="checkbox" id="editHidden"> 비공개</label>
     </div>
 
