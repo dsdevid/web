@@ -1,0 +1,10 @@
+# Cloudflare Pages 보안 헤더 — 모든 경로에 적용
+# CSP: 스크립트·스타일·폰트는 자체 호스팅만 허용 (vendor/ 포함),
+#      데이터 전송(connect)은 Supabase만, 외부 iframe 삽입 금지.
+/*
+  Strict-Transport-Security: max-age=31536000
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' https://img.dshw.co.kr data:; connect-src 'self' https://rwplqifhmlduukipnksm.supabase.co; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
