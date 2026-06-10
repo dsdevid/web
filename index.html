@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>강남대성기숙 의대관</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+<link rel="stylesheet" href="vendor/pretendard/pretendard.min.css">
+    <script src="vendor/pdfjs/pdf.min.js"></script>
     <script>
         // 줌 차단 메인 = CSS touch-action: pan-x pan-y (body) — 핀치/더블탭 줌 차단, 스크롤은 허용
         // 아래 gesture 이벤트는 구형 iOS Safari 보조 (PDF 확대는 뷰어 +/- 버튼 사용)
@@ -1116,13 +1116,6 @@
 
         /* ── 로그인 후 네비 ── */
         .nav-user-name  { font-size: 12px; color: rgba(255,255,255,0.8); letter-spacing: -0.12px; }
-        .nav-admin-pill {
-            color: rgba(255,255,255,0.85) !important; font-size: 12px !important;
-            padding: 4px 12px !important; border-radius: 9999px !important;
-            background: rgba(255,255,255,0.12); text-decoration: none;
-            letter-spacing: -0.12px !important; transition: background 0.15s;
-        }
-        .nav-admin-pill:hover { background: rgba(255,255,255,0.22) !important; }
         .nav-logout-btn {
             font-size: 12px; color: rgba(255,255,255,0.65); background: none;
             border: 1px solid rgba(255,255,255,0.2); padding: 4px 12px;
@@ -1157,8 +1150,6 @@
                 <div id="navLoggedIn" style="display:none;align-items:center;gap:8px;">
                     <button class="nav-logout-btn" onclick="openPwChange()">비번변경</button>
                     <span class="nav-user-name" id="navUserName"></span>
-                    <a id="navAdminLink" style="display:none;cursor:pointer;" class="nav-admin-pill"
-                       onclick="window.open('admin.html','dshw_admin','width=768,height=900')">관리자</a>
                     <button class="nav-logout-btn" onclick="doLogout()">로그아웃</button>
                 </div>
             </div>
@@ -1597,7 +1588,7 @@ async function doStudentLogin() {
     // 최초 로그인(temp 세션) → 비밀번호 변경 강제
     if (r.is_first_login === 'Y') { showChangePwForm(); return; }
 
-    updateNavLoggedIn(studentDisplayName(), false);
+    updateNavLoggedIn(studentDisplayName());
     startSessionTimer();
     startSessionHeartbeat();
     closeLoginModal();
@@ -1758,7 +1749,7 @@ function startSessionHeartbeat() {
     _heartbeat = setInterval(revalidateSession, 30000);  // 30초
 }
 document.addEventListener('visibilitychange', function() {
-    if (document.visibilityState === 'visible') { revalidateSession(); loadNotices(); }
+    if (document.visibilityState === 'visible') { revalidateSession(); loadNotices(); loadWeekly(); }
 });
 // 상단 표시: '[학번] 반그룹 - 이름'
 function studentDisplayName() {
@@ -1778,11 +1769,10 @@ async function doLogout() {
 // ─────────────────────────────────────────────
 // 네비 상태
 // ─────────────────────────────────────────────
-function updateNavLoggedIn(displayName, isAdmin) {
+function updateNavLoggedIn(displayName) {
     document.getElementById('navGuest').style.display = 'none';
     document.getElementById('navLoggedIn').style.display = 'flex';
     document.getElementById('navUserName').textContent = displayName;
-    document.getElementById('navAdminLink').style.display = isAdmin ? 'inline' : 'none';
     document.getElementById('mobileNavGuest').style.display = 'none';
     document.getElementById('mobileNavLoggedIn').style.display = 'flex';
     document.getElementById('mobileNavUserName').textContent = displayName;
@@ -1815,7 +1805,7 @@ function updateNavGuest() {
     var r = await callRpc('validate_session', { p_session_id: sess });
     if (!r || !r.valid) { clearStudentSession(); applyAccess(); return; }
     if (r.role === 'temp') { showChangePwForm(); return; }
-    updateNavLoggedIn(studentDisplayName(), false);
+    updateNavLoggedIn(studentDisplayName());
     startSessionTimer();  // 새로고침 후에도 남은 시간 기준 타이머 재시작
     startSessionHeartbeat();
 })();
@@ -1911,26 +1901,30 @@ async function handleNoticeClick(e) {
         return;
     }
     openNoticeDetail(id, n.textnotice_title, n.textnotice_body,
-                     n.textnotice_date, n.textnotice_owner, n.textnotice_readcnt);
+                     n.textnotice_date, n.textnotice_readcnt);
 }
 
 // ── 공지 홈 카드 페이지네이션 (5건 이상이면 노출) ──
 var _noticePage     = 1;
 var NOTICE_PER_PAGE = 4;
 
-function renderNoticePagination() {
-    var pg = document.getElementById('noticePagination');
-    var total = Math.ceil(_notices.length / NOTICE_PER_PAGE);
+// 공지·주간공지 공용 페이지네이션 렌더 (fnName: 페이지 전환 전역 함수명)
+function renderPagination(pg, page, total, fnName) {
     if (total <= 1) { pg.style.display = 'none'; pg.innerHTML = ''; return; }
     pg.style.display = 'flex';
-    var html = '<button class="wpg-btn" onclick="setNoticePage(' + (_noticePage-1) + ')"'
-             + (_noticePage<=1?' disabled':'') + '>&#8249;</button>';
+    var html = '<button class="wpg-btn" onclick="' + fnName + '(' + (page-1) + ')"'
+             + (page<=1?' disabled':'') + '>&#8249;</button>';
     for (var i = 1; i <= total; i++) {
-        html += '<button class="wpg-btn' + (i===_noticePage?' active':'') + '" onclick="setNoticePage(' + i + ')">' + i + '</button>';
+        html += '<button class="wpg-btn' + (i===page?' active':'') + '" onclick="' + fnName + '(' + i + ')">' + i + '</button>';
     }
-    html += '<button class="wpg-btn" onclick="setNoticePage(' + (_noticePage+1) + ')"'
-          + (_noticePage>=total?' disabled':'') + '>&#8250;</button>';
+    html += '<button class="wpg-btn" onclick="' + fnName + '(' + (page+1) + ')"'
+          + (page>=total?' disabled':'') + '>&#8250;</button>';
     pg.innerHTML = html;
+}
+
+function renderNoticePagination() {
+    renderPagination(document.getElementById('noticePagination'),
+                     _noticePage, Math.ceil(_notices.length / NOTICE_PER_PAGE), 'setNoticePage');
 }
 
 function setNoticePage(p) {
@@ -1940,7 +1934,7 @@ function setNoticePage(p) {
     renderNoticePage();
 }
 
-function openNoticeDetail(id, title, body, date, owner, readcnt) {
+function openNoticeDetail(id, title, body, date, readcnt) {
     var dateStr = date ? date.substring(0, 10).replace(/-/g, '.') : '';
     document.getElementById('ndTitle').textContent = title || '';
     var meta = document.getElementById('ndMeta');
@@ -2059,18 +2053,8 @@ function handleWeeklyClick(e) {
 }
 
 function renderWeeklyPagination() {
-    var pg = document.getElementById('weeklyPagination');
-    var total = Math.ceil(_weeklyAll.length / WEEKLY_PER_PAGE);
-    if (total <= 1) { pg.style.display = 'none'; pg.innerHTML = ''; return; }
-    pg.style.display = 'flex';
-    var html = '<button class="wpg-btn" onclick="setWeeklyPage(' + (_weeklyPage-1) + ')"'
-             + (_weeklyPage<=1?' disabled':'') + '>&#8249;</button>';
-    for (var i = 1; i <= total; i++) {
-        html += '<button class="wpg-btn' + (i===_weeklyPage?' active':'') + '" onclick="setWeeklyPage(' + i + ')">' + i + '</button>';
-    }
-    html += '<button class="wpg-btn" onclick="setWeeklyPage(' + (_weeklyPage+1) + ')"'
-          + (_weeklyPage>=total?' disabled':'') + '>&#8250;</button>';
-    pg.innerHTML = html;
+    renderPagination(document.getElementById('weeklyPagination'),
+                     _weeklyPage, Math.ceil(_weeklyAll.length / WEEKLY_PER_PAGE), 'setWeeklyPage');
 }
 
 function setWeeklyPage(p) {
@@ -2086,7 +2070,7 @@ var _pdfRenderToken = 0;
 var _pdfDoc = null;
 var _pdfScale = 1;          // 표시 배율 (1 = 화면 맞춤)
 var PDF_BASE_SCALE = 2;     // 렌더 해상도 기준 (선명도)
-if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'vendor/pdfjs/pdf.worker.min.js';
 
 async function openWeeklyPdf(id, title, filePath) {
     var wrap = document.getElementById('pdfCanvasWrap');

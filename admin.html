@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>관리자 | 강남대성기숙 의대관</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+  <link rel="stylesheet" href="vendor/pretendard/pretendard.min.css">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -561,10 +561,10 @@
         <div class="card-head"><span class="card-title">등록 관리자</span></div>
         <table class="data-table">
           <thead>
-            <tr><th>이름</th><th>이메일</th><th>역할</th><th>마지막 로그인</th></tr>
+            <tr><th>이름</th><th>이메일</th><th>역할</th><th>마지막 로그인</th><th style="width:90px">비번 재설정</th></tr>
           </thead>
           <tbody id="adminTbody">
-            <tr class="empty-row"><td colspan="4">데이터 없음</td></tr>
+            <tr class="empty-row"><td colspan="5">데이터 없음</td></tr>
           </tbody>
         </table>
       </div>
@@ -625,7 +625,7 @@
     </div>
 
     <div class="edit-actions">
-      <button class="btn-save"   onclick="saveNotice()">저장</button>
+      <button class="btn-save"   id="btnNoticeSave" onclick="saveNotice()">저장</button>
       <button class="btn-cancel" onclick="closeNoticeEdit()">취소</button>
     </div>
     <div class="edit-error" id="editError"></div>
@@ -654,6 +654,27 @@
     </div>
     <div class="edit-error" id="pwChangeError"></div>
     <div class="spinner-wrap" id="pwChangeSpinner"><div class="spinner"></div><span>변경 중...</span></div>
+  </div>
+</div>
+
+<!-- ── 비밀번호 강제 재설정 모달 (슈퍼관리자 전용) ── -->
+<div id="pwResetModal" class="edit-modal-backdrop" style="display:none" onclick="if(event.target===this)closePwReset()">
+  <div class="edit-modal-box">
+    <div style="font-size:17px;font-weight:600;margin-bottom:4px;">비밀번호 강제 재설정</div>
+    <div style="font-size:12px;color:var(--ink-muted);margin-bottom:14px" id="pwResetTarget"></div>
+
+    <label class="edit-label">새 비밀번호</label>
+    <input id="pwResetNew"  type="password" class="edit-input" placeholder="새 비밀번호" maxlength="100" autocomplete="new-password">
+
+    <label class="edit-label">새 비밀번호 확인</label>
+    <input id="pwResetNew2" type="password" class="edit-input" placeholder="새 비밀번호 확인" maxlength="100" autocomplete="new-password">
+
+    <div class="edit-actions">
+      <button class="btn-save"   id="btnPwReset" onclick="submitPwReset()">재설정</button>
+      <button class="btn-cancel" onclick="closePwReset()">취소</button>
+    </div>
+    <div class="edit-error" id="pwResetError"></div>
+    <div class="spinner-wrap" id="pwResetSpinner"><div class="spinner"></div><span>재설정 중...</span></div>
   </div>
 </div>
 
@@ -700,7 +721,7 @@ function renderAdminNoticeTable(list) {
     tbody.innerHTML = '<tr class="empty-row"><td colspan="6">공지사항이 없습니다</td></tr>';
     return;
   }
-  tbody.innerHTML = list.slice(0,10).map(function(r) {
+  tbody.innerHTML = list.map(function(r) {
     var date = r.textnotice_date ? r.textnotice_date.substring(0,10) : '—';
     var pinTxt = r.textnotice_pin    ? '📌' : '—';
     var pubTxt = r.textnotice_hidden ? '🔒' : '✅';
@@ -750,8 +771,10 @@ async function saveNotice() {
 
   if (!title) { showEditError('제목을 입력하세요'); return; }
 
-  var sp = document.getElementById('editSpinner');
+  var sp  = document.getElementById('editSpinner');
+  var btn = document.getElementById('btnNoticeSave');
   sp.className = 'spinner-wrap show';
+  btn.disabled = true;
 
   var r = await callRpc('save_notice', {
     p_session_token: getToken(), p_id: id,
@@ -760,6 +783,7 @@ async function saveNotice() {
   });
 
   sp.className = 'spinner-wrap';
+  btn.disabled = false;
   if (!r || !r.success) { showEditError('저장 실패: ' + (r && r.error || '서버 오류')); return; }
   closeNoticeEdit();
   loadAdminNotices();
@@ -840,16 +864,21 @@ function handleWeeklyDrop(e) {
   e.preventDefault();
   document.getElementById('weeklyDropArea').classList.remove('drag');
   var f = e.dataTransfer.files[0];
-  if (f && f.type === 'application/pdf') {
-    setWeeklyFile(f);
-  } else {
-    var err = document.getElementById('weeklyUploadError');
-    err.textContent = 'PDF 파일만 등록 가능합니다';
-    err.className = 'edit-error show';
-  }
+  if (f) setWeeklyFile(f);
 }
 
 function setWeeklyFile(f) {
+  var errEl = document.getElementById('weeklyUploadError');
+  if (f.type !== 'application/pdf') {
+    errEl.textContent = 'PDF 파일만 등록 가능합니다';
+    errEl.className = 'edit-error show';
+    return;
+  }
+  if (f.size > 10 * 1024 * 1024) {
+    errEl.textContent = '파일 크기는 최대 10MB까지 가능합니다';
+    errEl.className = 'edit-error show';
+    return;
+  }
   _weeklyFile = f;
   var nm = document.getElementById('weeklySelectedName');
   nm.textContent = '📄 ' + f.name + '  (' + Math.round(f.size / 1024) + 'KB)';
@@ -994,10 +1023,17 @@ function touchSession() {
   callRpc('touch_admin_session', { p_session_token: token });
 }
 
+function stopIdleTimer() {
+  clearTimeout(_idleTimer);
+  _idleTimer = null;
+}
+
 function resetIdleTimer() {
+  if (!getToken()) { stopIdleTimer(); return; }  // 로그아웃 상태면 타이머 동작 안 함
   touchSession();
   clearTimeout(_idleTimer);
   _idleTimer = setTimeout(function() {
+    stopIdleTimer();
     const token = getToken();
     if (token) callRpc('logout_admin_session', { p_session_token: token });
     clearSession();
@@ -1065,6 +1101,7 @@ async function doLogin() {
 
   if (!data || data.error) { showLoginError('대시보드 로드 실패'); return; }
   renderDashboard(data);
+  loadAdminNotices();
   loadAdminWeekly();
   startIdleTimer();
 }
@@ -1085,7 +1122,9 @@ async function doLogout() {
   const token = getToken();
   if (token) await callRpc('logout_admin_session', { p_session_token: token });
   clearSession();
+  stopIdleTimer();
   window.close();
+  showLoginView();  // 직접 연 창은 close 불가 → 로그인 화면 폴백
 }
 
 // ─────────────────────────────────────────────
@@ -1134,6 +1173,62 @@ async function submitPwChange() {
 }
 
 // ─────────────────────────────────────────────
+// 비밀번호 강제 재설정 (슈퍼관리자 → 일반관리자)
+// ─────────────────────────────────────────────
+var _pwResetTargetId = null;
+
+function openPwReset(idx) {
+  var r = _adminList[idx];
+  if (!r || !r.admin_id) { alert('대상 정보를 불러올 수 없습니다. 새로고침 후 다시 시도하세요.'); return; }
+  _pwResetTargetId = r.admin_id;
+  document.getElementById('pwResetTarget').textContent =
+    r.admin_name + ' (' + r.admin_id + ') — 기존 비밀번호 없이 변경됩니다. 잠금이 해제되고 접속 중인 세션은 종료됩니다.';
+  ['pwResetNew','pwResetNew2'].forEach(function(id){ document.getElementById(id).value = ''; });
+  document.getElementById('pwResetError').className = 'edit-error';
+  document.getElementById('pwResetSpinner').className = 'spinner-wrap';
+  document.getElementById('pwResetModal').style.display = 'flex';
+}
+function closePwReset() {
+  document.getElementById('pwResetModal').style.display = 'none';
+  _pwResetTargetId = null;
+}
+function showPwResetError(msg) {
+  var el = document.getElementById('pwResetError');
+  el.textContent = msg; el.className = 'edit-error show';
+}
+async function submitPwReset() {
+  var p1 = document.getElementById('pwResetNew').value;
+  var p2 = document.getElementById('pwResetNew2').value;
+  if (!p1 || p1.length < 4) { showPwResetError('새 비밀번호는 4자 이상 입력하세요'); return; }
+  if (p1 !== p2)            { showPwResetError('새 비밀번호가 일치하지 않습니다'); return; }
+  if (!_pwResetTargetId)    { showPwResetError('대상이 지정되지 않았습니다'); return; }
+
+  var sp = document.getElementById('pwResetSpinner');
+  var btn = document.getElementById('btnPwReset');
+  sp.className = 'spinner-wrap show';
+  btn.disabled = true;
+  var r = await callRpc('reset_admin_password', {
+    p_session_token: getToken(),
+    p_target_admin_id: _pwResetTargetId,
+    p_new_password: p1
+  });
+  sp.className = 'spinner-wrap';
+  btn.disabled = false;
+
+  if (!r || !r.success) {
+    var msgs = { UNAUTHORIZED:'세션이 만료되었습니다. 다시 로그인하세요',
+                 NOT_SUPER:'슈퍼관리자만 사용할 수 있습니다',
+                 NOT_FOUND:'대상 관리자를 찾을 수 없습니다',
+                 FORBIDDEN_TARGET:'슈퍼관리자 계정은 재설정할 수 없습니다',
+                 TOO_SHORT:'새 비밀번호는 4자 이상 입력하세요' };
+    showPwResetError(msgs[r && r.error] || '재설정 실패');
+    return;
+  }
+  closePwReset();
+  alert('비밀번호가 재설정되었습니다. 대상 관리자는 새 비밀번호로 로그인해야 합니다.');
+}
+
+// ─────────────────────────────────────────────
 // 대시보드 렌더링
 // ─────────────────────────────────────────────
 function renderDashboard(data) {
@@ -1159,24 +1254,32 @@ function renderDashboard(data) {
 // ─────────────────────────────────────────────
 // 테이블 렌더링
 // ─────────────────────────────────────────────
+var _adminList = [];
+
 function renderAdminLogins(rows) {
   const tbody = document.getElementById('adminTbody');
+  _adminList = rows || [];
   if (!rows || rows.length === 0) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="4">이력 없음</td></tr>';
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="5">이력 없음</td></tr>';
     return;
   }
-  tbody.innerHTML = rows.map(function(r) {
+  tbody.innerHTML = rows.map(function(r, i) {
     const date = r.admin_last_login_at
       ? r.admin_last_login_at.substring(0,16).replace('T',' ')
       : '—';
     const badge = r.admin_is_super_admin
       ? '<span class="badge b-super">슈퍼관리자</span>'
       : '<span class="badge b-admin">관리자</span>';
+    // 일반관리자만 강제 재설정 가능 (슈퍼관리자 계정은 서버에서도 거부)
+    const reset = r.admin_is_super_admin
+      ? '—'
+      : '<button class="btn-icon" title="비밀번호 강제 재설정" onclick="openPwReset(' + i + ')">🔑</button>';
     return '<tr>'
       + '<td>' + esc(r.admin_name || '') + '</td>'
       + '<td class="td-muted">' + esc(r.admin_email || '') + '</td>'
       + '<td>' + badge + '</td>'
       + '<td class="td-muted">' + date + '</td>'
+      + '<td>' + reset + '</td>'
       + '</tr>';
   }).join('');
 }

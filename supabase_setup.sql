@@ -263,8 +263,8 @@ BEGIN
 
   IF v_admin.admin_is_super_admin THEN
     SELECT COALESCE(jsonb_agg(a), '[]'::jsonb) INTO v_adm_logs FROM (
-      SELECT admin_name, admin_email, admin_last_login_at, admin_is_super_admin
-      FROM admin_master ORDER BY admin_last_login_at DESC NULLS LAST LIMIT 5
+      SELECT admin_id, admin_name, admin_email, admin_last_login_at, admin_is_super_admin
+      FROM admin_master ORDER BY admin_last_login_at DESC NULLS LAST LIMIT 50
     ) a;
     v_result := v_result || jsonb_build_object('admin_logins', v_adm_logs);
   END IF;
@@ -482,6 +482,62 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION change_admin_password(text, text, text) TO anon;
+
+
+-- ============================================================
+-- 6-5. 슈퍼관리자: 일반관리자 비밀번호 강제 재설정
+--   기존 비밀번호 불요. 호출자가 슈퍼관리자일 때만 허용.
+--   대상이 슈퍼관리자면 거부(FORBIDDEN_TARGET) — 슈퍼끼리 탈취 방지.
+--   부가 처리: 계정 잠금 해제 + 실패카운트 초기화 + 대상 세션 종료(재로그인 유도).
+-- ============================================================
+DROP FUNCTION IF EXISTS reset_admin_password(text, text, text);
+CREATE FUNCTION reset_admin_password(
+  p_session_token   text,
+  p_target_admin_id text,
+  p_new_password    text
+) RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_caller admin_master%ROWTYPE;
+  v_target admin_master%ROWTYPE;
+BEGIN
+  v_caller := _admin_session(p_session_token);
+  IF v_caller.admin_id IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'UNAUTHORIZED');
+  END IF;
+  IF NOT v_caller.admin_is_super_admin THEN
+    RETURN jsonb_build_object('success', false, 'error', 'NOT_SUPER');
+  END IF;
+
+  SELECT * INTO v_target FROM admin_master WHERE admin_id = p_target_admin_id;
+  IF v_target.admin_id IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'NOT_FOUND');
+  END IF;
+  IF v_target.admin_is_super_admin THEN
+    RETURN jsonb_build_object('success', false, 'error', 'FORBIDDEN_TARGET');
+  END IF;
+
+  IF length(p_new_password) < 4 THEN
+    RETURN jsonb_build_object('success', false, 'error', 'TOO_SHORT');
+  END IF;
+
+  UPDATE admin_master SET
+    admin_passwd_hash        = crypt(p_new_password, gen_salt('bf', 10)),
+    admin_passwd_changed_at  = now(),
+    admin_login_fail_count   = 0,
+    admin_status             = 'active',
+    admin_locked_until       = NULL,
+    admin_session_token      = NULL,
+    admin_session_expires_at = NULL
+  WHERE admin_id = v_target.admin_id;
+
+  RETURN jsonb_build_object('success', true);
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION reset_admin_password(text, text, text) TO anon;
 
 
 -- ============================================================
