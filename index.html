@@ -2373,6 +2373,17 @@ function closeWeeklyPdf(e) {
   svg.addEventListener('touchstart',onPointer,{passive:true});
   svg.addEventListener('touchmove',onPointer,{passive:true});
 
+  // 타이틀·세로바 영역: 탭이 이미 열려 있으면 클릭을 로켓 호출로 전달 (닫혀 있으면 탭 열기 유지)
+  const panel=svg.closest('.va-panel');
+  const bar=panel?panel.querySelector('.va-bar'):null;
+  if(bar){
+    const fwd=function(e){ if(panel.classList.contains('va-open')) onPointer(e); };
+    bar.addEventListener('pointerdown',fwd);
+    bar.addEventListener('pointermove',function(e){ if(e.buttons) fwd(e); });
+    bar.addEventListener('touchstart',fwd,{passive:true});
+    bar.addEventListener('touchmove',fwd,{passive:true});
+  }
+
   let last=performance.now();
   function frame(now){
     const dt=Math.min(0.05,(now-last)/1000); last=now;
