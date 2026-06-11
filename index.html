@@ -2422,6 +2422,8 @@ function closeWeeklyPdf(e) {
     const p=toSvg(e);
     target={x:Math.max(M,Math.min(W-M,p.x)), y:Math.max(M,Math.min(H-M,p.y))};
     mode='pointer';
+    // 최초 누름에만 문구 교체 (드래그 이동 중에는 유지)
+    if((e.type==='pointerdown'||e.type==='touchstart')&&window.sbNextQuote) window.sbNextQuote();
   }
   svg.addEventListener('pointerdown',onPointer);
   svg.addEventListener('pointermove',function(e){ if(e.buttons) onPointer(e); });  // 드래그 추적
@@ -2548,7 +2550,19 @@ function closeWeeklyPdf(e) {
     "너의 속도로 가도 괜찮아, 비교하지 않아도 돼.",
     "1년 후의 나에게 부끄럽지 않은 오늘을 보내자."
   ];
-  document.getElementById('sbQuote').textContent=QUOTES[Math.floor(Math.random()*QUOTES.length)];
+  const el=document.getElementById('sbQuote');
+  let last=-1;
+  function set(){
+    let i;
+    do{ i=Math.floor(Math.random()*QUOTES.length); }while(i===last&&QUOTES.length>1);  // 직전 문구 반복 방지
+    last=i; el.textContent=QUOTES[i];
+  }
+  set();
+  // 배너 클릭 시 페이드와 함께 문구 교체 (로켓 호출과 동시 발동)
+  window.sbNextQuote=function(){
+    el.style.opacity='0';
+    setTimeout(function(){ set(); el.style.opacity=''; },250);
+  };
 })();
 </script>
 
