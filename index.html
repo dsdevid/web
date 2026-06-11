@@ -278,7 +278,7 @@
         .va-star-stage svg { width: 100%; height: 100%; display: block; cursor: crosshair; }
         .va-star-btns { position: absolute; right: 38px; bottom: 10px; display: flex; gap: 6px; }  /* 우측 28px = 다음 패널 세로바 겹침 회피 */
         .va-panel.va-star .va-content { padding: 0; pointer-events: none; }
-        .va-star-quote { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 0 40px 0 96px; pointer-events: none; }  /* 좌 96 = 세로바 88 + 여백, 우 40 = 겹침 28 + 여백 */
+        .va-star-quote { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 0 92px 0 96px; pointer-events: none; }  /* 좌 96 = 세로바 88 + 여백, 문구 폭 472px */
         .va-star-quote p { margin: 0; color: #fff; font-weight: 700; font-size: 22px; line-height: 1.55; text-align: center; text-wrap: balance; text-shadow: 0 2px 14px rgba(0,0,0,0.65); word-break: keep-all; transform: translate(-1.5em, -2em); }
         #sbQuote { transition: opacity 0.3s ease; }
         .va-panel.va-star:not(.va-open) #sbQuote { opacity: 0; }  /* 접힌 탭: 문구가 타이틀과 겹치지 않게 숨김 */
@@ -326,7 +326,7 @@
             .va-panel.va-star.va-open .va-content { flex: none; height: 80px; padding: 0; }
             .va-star-btns { right: 10px; }
             /* 문구: 좌 30px, 타이틀(바) 아래 5px 고정 — height는 va-content 높이(80px)와 동일하게 유지 */
-            .va-star-quote { inset: auto 8px 0 30px; height: 80px; align-items: flex-start; justify-content: flex-start; padding: 5px 0 0; }
+            .va-star-quote { inset: auto 42px 0 30px; height: 80px; align-items: flex-start; justify-content: flex-start; padding: 5px 0 0; }
             .va-star-quote p { font-size: 16px; text-align: left; transform: none; }
         }
 
