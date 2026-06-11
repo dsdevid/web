@@ -274,7 +274,15 @@
         .va-go:hover { background: rgba(255,255,255,0.38); }
 
         /* 별빛 응원 패널 — 배너가 패널 전면(세로바 뒤까지) 배경, 버튼은 패널 안 고정 */
-        .va-star-stage { position: absolute; inset: 0; }
+        .va-star-stage { position: absolute; inset: 0; background: linear-gradient(135deg, #020a1a, #091526); }
+        /* 안드로메다 회전 영상 — 별 레이어 아래, 검정 배경은 screen 블렌드로 투명화, 가장자리 radial 페이드 */
+        .va-star-video {
+            position: absolute; left: 55%; top: -2%; width: 48%; height: 104%;
+            object-fit: cover; mix-blend-mode: screen; pointer-events: none;
+            transform: perspective(800px) rotateX(52deg) rotateZ(-18deg);  /* 디스크 비스듬히 + 왼쪽 기울임 */
+            -webkit-mask-image: radial-gradient(closest-side, #fff 52%, transparent 100%);
+            mask-image: radial-gradient(closest-side, #fff 52%, transparent 100%);
+        }
         .va-star-stage svg { width: 100%; height: 100%; display: block; cursor: crosshair; }
         .va-star-btns { position: absolute; right: 38px; bottom: 10px; display: flex; gap: 6px; }  /* 우측 28px = 다음 패널 세로바 겹침 회피 */
         .va-panel.va-star .va-content { padding: 0; pointer-events: none; }
@@ -1200,28 +1208,15 @@
     <div class="v-acc" id="vAcc">
         <div class="va-panel va-open va-star" style="--va-color:#0a1730;--va-comp:#e8c51d">
             <div class="va-star-stage">
+                <video class="va-star-video" src="img/andromeda.mp4" autoplay muted loop playsinline></video>
                 <svg id="starBanner" viewBox="0 0 680 240" preserveAspectRatio="xMinYMid slice" xmlns="http://www.w3.org/2000/svg">
                 <defs>
-                  <linearGradient id="sbBg" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stop-color="#020a1a"/>
-                    <stop offset="100%" stop-color="#091526"/>
-                  </linearGradient>
-                  <radialGradient id="sbMaskGrad" cx="50%" cy="50%" r="50%">
-                    <stop offset="0%" stop-color="#fff"/>
-                    <stop offset="62%" stop-color="#fff"/>
-                    <stop offset="100%" stop-color="#000"/>
-                  </radialGradient>
-                  <mask id="sbMask">
-                    <rect x="412" y="22" width="288" height="191" fill="url(#sbMaskGrad)"/>
-                  </mask>
                   <radialGradient id="sbGlow">
                     <stop offset="0%" stop-color="rgba(255,250,235,0.5)"/>
                     <stop offset="45%" stop-color="rgba(255,240,210,0.16)"/>
                     <stop offset="100%" stop-color="rgba(255,240,210,0)"/>
                   </radialGradient>
                 </defs>
-                <rect width="680" height="240" fill="url(#sbBg)"/>
-                <image href="img/andromeda.png" x="412" y="22" width="288" height="191" preserveAspectRatio="xMidYMid meet" mask="url(#sbMask)"/>
                 <g id="sbBgStars"></g>
                 <g id="sbFgStars"></g>
                 <g id="sbRipples"></g>
