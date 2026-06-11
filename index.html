@@ -2432,28 +2432,49 @@ function closeWeeklyPdf(e) {
     speed=Math.round(Math.min(3,Math.max(0.3,speed+d))*10)/10;
   };
 
-  // 도착 지점 물결 파형: 동심원 3개가 시차를 두고 퍼지며 사라짐
+  // 도착 지점 효과: 골드 파형이 퍼졌다 원점 복귀 → 큰 별 번쩍 후 소멸
   // 동적 삽입 SMIL은 begin="0s"가 이미 지난 시각이라 begin="indefinite"+beginElement() 필수
   const ripplesG=document.getElementById('sbRipples');
+  const SVGNS='http://www.w3.org/2000/svg';
+  function anim(el,name,values,keyTimes,dur){
+    const a=document.createElementNS(SVGNS, name==='transform'?'animateTransform':'animate');
+    if(name==='transform'){ a.setAttribute('attributeName','transform'); a.setAttribute('type','scale'); }
+    else a.setAttribute('attributeName',name);
+    a.setAttribute('values',values); a.setAttribute('keyTimes',keyTimes);
+    a.setAttribute('dur',dur); a.setAttribute('begin','indefinite'); a.setAttribute('fill','freeze');
+    el.appendChild(a);
+  }
   function ripple(x,y){
-    for(let i=0;i<3;i++){
+    // 1) 파형 2겹: 3→46→3 왕복
+    for(let i=0;i<2;i++){
       setTimeout(function(){
-        const c=document.createElementNS('http://www.w3.org/2000/svg','circle');
+        const c=document.createElementNS(SVGNS,'circle');
         c.setAttribute('cx',x.toFixed(1)); c.setAttribute('cy',y.toFixed(1));
         c.setAttribute('r','3'); c.setAttribute('fill','none');
-        c.setAttribute('stroke','rgba(125,211,252,0.8)'); c.setAttribute('stroke-width','1.5');
-        [['r','3','46'],['opacity','0.8','0'],['stroke-width','1.5','0.4']].forEach(function(p){
-          const a=document.createElementNS('http://www.w3.org/2000/svg','animate');
-          a.setAttribute('attributeName',p[0]); a.setAttribute('from',p[1]); a.setAttribute('to',p[2]);
-          a.setAttribute('dur','1.1s'); a.setAttribute('begin','indefinite'); a.setAttribute('fill','freeze');
-          a.setAttribute('calcMode','spline'); a.setAttribute('keyTimes','0;1'); a.setAttribute('keySplines','0.2 0.6 0.4 1');
-          c.appendChild(a);
-        });
+        c.setAttribute('stroke','rgba(251,191,36,0.9)'); c.setAttribute('stroke-width','1.5');
+        anim(c,'r','3;46;3','0;0.5;1','1s');
+        anim(c,'opacity','0.9;0.55;0.2','0;0.5;1','1s');
         ripplesG.appendChild(c);
         c.querySelectorAll('animate').forEach(function(a){ a.beginElement(); });
-        setTimeout(function(){ c.remove(); },1200);
-      }, i*180);
+        setTimeout(function(){ c.remove(); },1050);
+      }, i*140);
     }
+    // 2) 복귀 직후 큰 별: 빠르게 커지며 번쩍 → 소멸
+    setTimeout(function(){
+      const g=document.createElementNS(SVGNS,'g');
+      g.setAttribute('transform','translate('+x.toFixed(1)+','+y.toFixed(1)+')');
+      const p=document.createElementNS(SVGNS,'polygon');
+      p.setAttribute('points','0,-18 5,-5 18,0 5,5 0,18 -5,5 -18,0 -5,-5');
+      p.setAttribute('fill','#ffd76a');
+      anim(p,'transform','0.2;1.4;0','0;0.35;1','0.45s');
+      anim(p,'opacity','1;1;0','0;0.6;1','0.45s');
+      const core=document.createElementNS(SVGNS,'circle');
+      core.setAttribute('r','3'); core.setAttribute('fill','#fffdf5');
+      anim(core,'opacity','1;1;0','0;0.6;1','0.45s');
+      g.appendChild(p); g.appendChild(core); ripplesG.appendChild(g);
+      g.querySelectorAll('animate, animateTransform').forEach(function(a){ a.beginElement(); });
+      setTimeout(function(){ g.remove(); },520);
+    }, 1100);
   }
 })();
 
