@@ -284,6 +284,8 @@
             mask-image: radial-gradient(closest-side, #fff 52%, transparent 100%);
         }
         .va-star-stage svg { width: 100%; height: 100%; display: block; cursor: crosshair; }
+        .va-star-skyfield { position: absolute; inset: 0; pointer-events: none; }  /* 별 레이어 — 클릭은 위쪽 로켓 SVG가 받음 */
+        #starBanner { position: absolute; inset: 0; }
         .va-star-btns { position: absolute; right: 38px; bottom: 10px; display: flex; gap: 6px; }  /* 우측 28px = 다음 패널 세로바 겹침 회피 */
         .va-panel.va-star .va-content { padding: 0; pointer-events: none; }
         .va-star-quote { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 0 92px 0 96px; pointer-events: none; }  /* 좌 96 = 세로바 88 + 여백, 문구 폭 472px */
@@ -1208,8 +1210,8 @@
     <div class="v-acc" id="vAcc">
         <div class="va-panel va-open va-star" style="--va-color:#0a1730;--va-comp:#e8c51d">
             <div class="va-star-stage">
-                <video class="va-star-video" src="img/andromeda.mp4" autoplay muted loop playsinline></video>
-                <svg id="starBanner" viewBox="0 0 680 240" preserveAspectRatio="xMinYMid slice" xmlns="http://www.w3.org/2000/svg">
+                <!-- 레이어(앞→뒤): 텍스트 → 로켓·효과 SVG → 은하 영상 → 별 SVG → 배경 그라디언트 -->
+                <svg class="va-star-skyfield" viewBox="0 0 680 240" preserveAspectRatio="xMinYMid slice" xmlns="http://www.w3.org/2000/svg">
                 <defs>
                   <radialGradient id="sbGlow">
                     <stop offset="0%" stop-color="rgba(255,250,235,0.5)"/>
@@ -1219,6 +1221,9 @@
                 </defs>
                 <g id="sbBgStars"></g>
                 <g id="sbFgStars"></g>
+                </svg>
+                <video class="va-star-video" src="img/andromeda.mp4" autoplay muted loop playsinline></video>
+                <svg id="starBanner" viewBox="0 0 680 240" preserveAspectRatio="xMinYMid slice" xmlns="http://www.w3.org/2000/svg">
                 <g id="sbRipples"></g>
                 <g id="sbMeteors"></g>
                 <polyline id="sbTrail" fill="none" stroke="rgba(125,211,252,0.30)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
