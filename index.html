@@ -2465,13 +2465,13 @@ function closeWeeklyPdf(e) {
       const g=document.createElementNS(SVGNS,'g');
       g.setAttribute('transform','translate('+x.toFixed(1)+','+y.toFixed(1)+')');
       const p=document.createElementNS(SVGNS,'polygon');
-      p.setAttribute('points','0,-20 3.5,-3.5 20,0 3.5,3.5 0,20 -3.5,3.5 -20,0 -3.5,-3.5');
+      p.setAttribute('points','0,-14 2,-2 14,0 2,2 0,14 -2,2 -14,0 -2,-2');
       p.setAttribute('fill','#ffd76a');
       anim(p,'scale','0.2;1.4;0','0;0.35;1','0.55s');
       anim(p,'rotate','0;200','0;1','0.55s');
       anim(p,'opacity','1;1;0','0;0.6;1','0.55s');
       const core=document.createElementNS(SVGNS,'circle');
-      core.setAttribute('r','3'); core.setAttribute('fill','#fffdf5');
+      core.setAttribute('r','2'); core.setAttribute('fill','#fffdf5');
       anim(core,'opacity','1;1;0','0;0.6;1','0.55s');
       g.appendChild(p); g.appendChild(core); ripplesG.appendChild(g);
       g.querySelectorAll('animate, animateTransform').forEach(function(a){ a.beginElement(); });
