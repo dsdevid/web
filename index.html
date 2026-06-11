@@ -2348,7 +2348,7 @@ function closeWeeklyPdf(e) {
   const svg=document.getElementById('starBanner');
   const rocket=document.getElementById('sbRocket');
   const trailEl=document.getElementById('sbTrail');
-  const W=680,H=240,M=26;
+  const W=680,H=240,M=14;  // 가장자리 여백 — 로켓 크기만큼만 (목표·반사 공용)
   let speed=1, trailOn=true, trail=[];
   let pos={x:340,y:122};
   // 초기 진행 방향: 임의 각도, 단위 벡터로 시작
@@ -2369,7 +2369,9 @@ function closeWeeklyPdf(e) {
     mode='pointer';
   }
   svg.addEventListener('pointerdown',onPointer);
+  svg.addEventListener('pointermove',function(e){ if(e.buttons) onPointer(e); });  // 드래그 추적
   svg.addEventListener('touchstart',onPointer,{passive:true});
+  svg.addEventListener('touchmove',onPointer,{passive:true});
 
   let last=performance.now();
   function frame(now){
@@ -2379,7 +2381,8 @@ function closeWeeklyPdf(e) {
     if(mode==='pointer'){
       const dx=target.x-pos.x, dy=target.y-pos.y;
       const dist=Math.hypot(dx,dy)||1;
-      const dvx=dx/dist*maxSpeed, dvy=dy/dist*maxSpeed;
+      const seek=maxSpeed*1.8;  // 호출 응답 빠르게 — 도착 후 배회는 기존 속도
+      const dvx=dx/dist*seek, dvy=dy/dist*seek;
       const steer=Math.min(1,2.6*dt);          // smooth turning
       vel.x+=(dvx-vel.x)*steer;
       vel.y+=(dvy-vel.y)*steer;
