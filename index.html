@@ -2437,16 +2437,17 @@ function closeWeeklyPdf(e) {
   const ripplesG=document.getElementById('sbRipples');
   const SVGNS='http://www.w3.org/2000/svg';
   function anim(el,name,values,keyTimes,dur){
-    const a=document.createElementNS(SVGNS, name==='transform'?'animateTransform':'animate');
-    if(name==='transform'){ a.setAttribute('attributeName','transform'); a.setAttribute('type','scale'); }
+    const isT=(name==='scale'||name==='rotate');
+    const a=document.createElementNS(SVGNS, isT?'animateTransform':'animate');
+    if(isT){ a.setAttribute('attributeName','transform'); a.setAttribute('type',name); a.setAttribute('additive','sum'); }
     else a.setAttribute('attributeName',name);
     a.setAttribute('values',values); a.setAttribute('keyTimes',keyTimes);
     a.setAttribute('dur',dur); a.setAttribute('begin','indefinite'); a.setAttribute('fill','freeze');
     el.appendChild(a);
   }
   function ripple(x,y){
-    // 1) 파형 2겹: 3→46→3 왕복
-    for(let i=0;i<2;i++){
+    // 1) 파형 4겹: 3→46→3 왕복
+    for(let i=0;i<4;i++){
       setTimeout(function(){
         const c=document.createElementNS(SVGNS,'circle');
         c.setAttribute('cx',x.toFixed(1)); c.setAttribute('cy',y.toFixed(1));
@@ -2457,24 +2458,25 @@ function closeWeeklyPdf(e) {
         ripplesG.appendChild(c);
         c.querySelectorAll('animate').forEach(function(a){ a.beginElement(); });
         setTimeout(function(){ c.remove(); },1050);
-      }, i*140);
+      }, i*120);
     }
-    // 2) 복귀 직후 큰 별: 빠르게 커지며 번쩍 → 소멸
+    // 2) 복귀 직후 큰 별: 날카로운 8방 별이 회전하며 번쩍 → 소멸
     setTimeout(function(){
       const g=document.createElementNS(SVGNS,'g');
       g.setAttribute('transform','translate('+x.toFixed(1)+','+y.toFixed(1)+')');
       const p=document.createElementNS(SVGNS,'polygon');
-      p.setAttribute('points','0,-18 5,-5 18,0 5,5 0,18 -5,5 -18,0 -5,-5');
+      p.setAttribute('points','0,-20 3.5,-3.5 20,0 3.5,3.5 0,20 -3.5,3.5 -20,0 -3.5,-3.5');
       p.setAttribute('fill','#ffd76a');
-      anim(p,'transform','0.2;1.4;0','0;0.35;1','0.45s');
-      anim(p,'opacity','1;1;0','0;0.6;1','0.45s');
+      anim(p,'scale','0.2;1.4;0','0;0.35;1','0.55s');
+      anim(p,'rotate','0;200','0;1','0.55s');
+      anim(p,'opacity','1;1;0','0;0.6;1','0.55s');
       const core=document.createElementNS(SVGNS,'circle');
       core.setAttribute('r','3'); core.setAttribute('fill','#fffdf5');
-      anim(core,'opacity','1;1;0','0;0.6;1','0.45s');
+      anim(core,'opacity','1;1;0','0;0.6;1','0.55s');
       g.appendChild(p); g.appendChild(core); ripplesG.appendChild(g);
       g.querySelectorAll('animate, animateTransform').forEach(function(a){ a.beginElement(); });
-      setTimeout(function(){ g.remove(); },520);
-    }, 1100);
+      setTimeout(function(){ g.remove(); },620);
+    }, 1400);
   }
 })();
 
