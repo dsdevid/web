@@ -325,9 +325,9 @@
             /* 별빛 응원: 빈 va-content가 배너 높이 확보 — 다른 탭(본문 2줄 ≈ 80px) 확장 높이에 맞춤. flex:1(basis 0%)이 height를 무시하므로 flex:none 필수 */
             .va-panel.va-star.va-open .va-content { flex: none; height: 80px; padding: 0; }
             .va-star-btns { right: 10px; }
-            /* 문구: 타이틀 행(상단) 아래에서 좌측 정렬, 전체 출력 */
-            .va-star-quote { padding: 44px 16px 8px; }
-            .va-star-quote p { font-size: 16px; text-align: left; transform: translate(-2em, -2em); }
+            /* 문구: 좌 30px, 타이틀(바) 아래 5px 고정 — height는 va-content 높이(80px)와 동일하게 유지 */
+            .va-star-quote { inset: auto 16px 0 30px; height: 80px; align-items: flex-start; justify-content: flex-start; padding: 5px 0 0; }
+            .va-star-quote p { font-size: 16px; text-align: left; transform: none; }
         }
 
         .btn-pill {
