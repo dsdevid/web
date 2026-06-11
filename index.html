@@ -1214,12 +1214,18 @@
                   <mask id="sbMask">
                     <rect x="412" y="22" width="288" height="191" fill="url(#sbMaskGrad)"/>
                   </mask>
+                  <radialGradient id="sbGlow">
+                    <stop offset="0%" stop-color="rgba(255,250,235,0.5)"/>
+                    <stop offset="45%" stop-color="rgba(255,240,210,0.16)"/>
+                    <stop offset="100%" stop-color="rgba(255,240,210,0)"/>
+                  </radialGradient>
                 </defs>
                 <rect width="680" height="240" fill="url(#sbBg)"/>
                 <image href="img/andromeda.png" x="412" y="22" width="288" height="191" preserveAspectRatio="xMidYMid meet" mask="url(#sbMask)"/>
                 <g id="sbBgStars"></g>
                 <g id="sbFgStars"></g>
                 <g id="sbRipples"></g>
+                <g id="sbMeteors"></g>
                 <polyline id="sbTrail" fill="none" stroke="rgba(125,211,252,0.30)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 <g id="sbRocket" transform="translate(340,122)">
                   <g transform="rotate(90)">
@@ -2302,14 +2308,19 @@ function closeWeeklyPdf(e) {
     const op=(0.15+t*0.55)*(0.85+r()*0.3);  // bigger stars are brighter
     const circle=circlePath(2*N,Rc);         // segment count must match the star
     const star=starPath(N,Rt,Ri);
+    const px=r()*680, py=r()*240;
+    // 색 온도 혼합: 청백/백/온백/금/주황 — 실제 별 스펙트럼 분포 느낌
+    const cv=r();
+    const color=cv<0.25?'#cfe2ff':cv<0.65?'#ffffff':cv<0.85?'#fff3d4':cv<0.95?'#ffdfa6':'#ffc08a';
     const el=document.createElementNS('http://www.w3.org/2000/svg','path');
-    el.setAttribute('transform','translate('+(r()*680).toFixed(1)+','+(r()*240).toFixed(1)+')');
-    el.setAttribute('fill','white');
+    el.setAttribute('transform','translate('+px.toFixed(1)+','+py.toFixed(1)+')');
+    el.setAttribute('fill',color);
     el.setAttribute('d',circle);
     el.setAttribute('opacity',op.toFixed(2));
     // Twinkle scales with size: large stars morph slow & deep, small ones shimmer fast & subtle
     const dur=(3.6-t*1.9)+r()*0.8;          // ~1.7s (big) .. ~4.4s (small)
     const begin=(-r()*dur).toFixed(2)+'s';   // desync so they don't pulse in unison
+    const mid=(0.15+r()*0.4).toFixed(2);     // 불규칙 반짝임: 빨리 번쩍, 천천히 복귀
     // Shape: dot -> star -> dot
     const am=document.createElementNS('http://www.w3.org/2000/svg','animate');
     am.setAttribute('attributeName','d');
@@ -2318,22 +2329,32 @@ function closeWeeklyPdf(e) {
     am.setAttribute('begin',begin);
     am.setAttribute('repeatCount','indefinite');
     am.setAttribute('calcMode','spline');
-    am.setAttribute('keyTimes','0;0.5;1');
+    am.setAttribute('keyTimes','0;'+mid+';1');
     am.setAttribute('keySplines','0.4 0 0.6 1;0.4 0 0.6 1');
     el.appendChild(am);
-    // Brightness: dim as a dot, peaks bright at the star form
+    // Brightness: dim as a dot, peaks bright at the star form. 8%는 강한 번쩍
     const depth=0.10+t*0.45;
     const low=(op*(1-depth)).toFixed(2);
+    const peak=(r()<0.08?Math.min(1,op*1.9):op).toFixed(2);
     const ao=document.createElementNS('http://www.w3.org/2000/svg','animate');
     ao.setAttribute('attributeName','opacity');
-    ao.setAttribute('values',low+';'+op.toFixed(2)+';'+low);
+    ao.setAttribute('values',low+';'+peak+';'+low);
     ao.setAttribute('dur',dur.toFixed(2)+'s');
     ao.setAttribute('begin',begin);
     ao.setAttribute('repeatCount','indefinite');
     ao.setAttribute('calcMode','spline');
-    ao.setAttribute('keyTimes','0;0.5;1');
+    ao.setAttribute('keyTimes','0;'+mid+';1');
     ao.setAttribute('keySplines','0.4 0 0.6 1;0.4 0 0.6 1');
     el.appendChild(ao);
+    // 글로우: 가장 밝은 별에만 부드러운 헤일로 (별보다 먼저 그려 뒤에 깔림)
+    if(t>0.9){
+      const halo=document.createElementNS('http://www.w3.org/2000/svg','circle');
+      halo.setAttribute('cx',px.toFixed(1)); halo.setAttribute('cy',py.toFixed(1));
+      halo.setAttribute('r',(rad*5).toFixed(1));
+      halo.setAttribute('fill','url(#sbGlow)');
+      halo.setAttribute('opacity',(0.5+r()*0.3).toFixed(2));
+      target.appendChild(halo);
+    }
     target.appendChild(el);
   };
   // 300 = 원본(182개)보다 촘촘하게 — 세로바 뒤 영역까지 채움
@@ -2341,6 +2362,39 @@ function closeWeeklyPdf(e) {
   for(let i=0;i<300;i++) makeStar(r()*0.4+0.3);   // small only (0.30 .. 0.70)
   // Foreground layer: stars rendered in front of the Andromeda image for depth
   for(let i=0;i<300;i++) makeStar(r()*1.2+0.3,gf);
+
+  // 유성: 4~9초 간격 랜덤, 상단에서 대각선 낙하 (꼬리 = 긴 희미선 + 짧은 밝은선)
+  const NS='http://www.w3.org/2000/svg';
+  const meteorG=document.getElementById('sbMeteors');
+  function meteor(){
+    const sx=40+Math.random()*520, sy=Math.random()*50;
+    const ang=Math.PI*(0.18+Math.random()*0.2);
+    const len=130+Math.random()*110;
+    const dx=Math.cos(ang)*len, dy=Math.sin(ang)*len;
+    const ux=dx/len, uy=dy/len;
+    const mg=document.createElementNS(NS,'g');
+    mg.setAttribute('opacity','0');
+    [[26,1.2,'rgba(255,255,255,0.3)'],[11,1.7,'#ffffff']].forEach(function(s){
+      const ln=document.createElementNS(NS,'line');
+      ln.setAttribute('x1',(-ux*s[0]).toFixed(1)); ln.setAttribute('y1',(-uy*s[0]).toFixed(1));
+      ln.setAttribute('x2','0'); ln.setAttribute('y2','0');
+      ln.setAttribute('stroke',s[2]); ln.setAttribute('stroke-width',s[1]); ln.setAttribute('stroke-linecap','round');
+      mg.appendChild(ln);
+    });
+    const at=document.createElementNS(NS,'animateTransform');
+    at.setAttribute('attributeName','transform'); at.setAttribute('type','translate');
+    at.setAttribute('values',sx.toFixed(1)+','+sy.toFixed(1)+';'+(sx+dx).toFixed(1)+','+(sy+dy).toFixed(1));
+    at.setAttribute('dur','0.85s'); at.setAttribute('begin','indefinite'); at.setAttribute('fill','freeze');
+    const ao=document.createElementNS(NS,'animate');
+    ao.setAttribute('attributeName','opacity'); ao.setAttribute('values','0;0.95;0');
+    ao.setAttribute('keyTimes','0;0.2;1'); ao.setAttribute('dur','0.85s'); ao.setAttribute('begin','indefinite'); ao.setAttribute('fill','freeze');
+    mg.appendChild(at); mg.appendChild(ao);
+    meteorG.appendChild(mg);
+    at.beginElement(); ao.beginElement();
+    setTimeout(function(){ mg.remove(); },950);
+    setTimeout(meteor, 4000+Math.random()*5000);
+  }
+  setTimeout(meteor,3000);
 })();
 
 /* Rocket motion engine: bounces off the four screen edges (DVD-logo style),
