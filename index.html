@@ -279,7 +279,7 @@
         .va-star-btns { position: absolute; right: 38px; bottom: 10px; display: flex; gap: 6px; }  /* 우측 28px = 다음 패널 세로바 겹침 회피 */
         .va-panel.va-star .va-content { padding: 0; pointer-events: none; }
         .va-star-quote { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 0 56px 0 108px; pointer-events: none; }  /* 좌 108 = 세로바 88 + 여백, 우 56 = 겹침 28 + 여백 */
-        .va-star-quote p { margin: 0; color: #fff; font-weight: 700; font-size: 22px; line-height: 1.55; text-align: center; text-wrap: balance; text-shadow: 0 2px 14px rgba(0,0,0,0.65); word-break: keep-all; }
+        .va-star-quote p { margin: 0; color: #fff; font-weight: 700; font-size: 22px; line-height: 1.55; text-align: center; text-wrap: balance; text-shadow: 0 2px 14px rgba(0,0,0,0.65); word-break: keep-all; transform: translate(-1.5em, -2em); }
         #sbQuote { transition: opacity 0.3s ease; }
         .va-panel.va-star:not(.va-open) #sbQuote { opacity: 0; }  /* 접힌 탭: 문구가 타이틀과 겹치지 않게 숨김 */
         .spdbtn { width:26px; height:26px; border-radius:50%; border:0.5px solid rgba(147,197,253,0.5); background:rgba(8,18,38,0.6); color:#cfe3ff; font-size:16px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; -webkit-backdrop-filter:blur(2px); backdrop-filter:blur(2px); transition:background .15s,border-color .15s; }
