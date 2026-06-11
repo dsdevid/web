@@ -319,11 +319,11 @@
             .va-panel::before { display: none; }
             .va-bar { position: relative; }
             .va-content { display: flex; max-height: 0; overflow: hidden; padding: 0 16px; opacity: 1; transition: max-height 0.35s ease, padding 0.35s ease; }
-            .va-panel.va-open .va-content { max-height: 280px; padding: 10px 16px 20px; transition-delay: 0s; }
+            .va-panel.va-open .va-content { max-height: 280px; padding: 10px 16px 25px; transition-delay: 0s; }
             .va-panel.va-open .va-go { position: absolute; top: 10px; right: 16px; font-size: 13px; }
             .va-panel.va-open .va-desc p { margin: 0; }
-            /* 별빛 응원: 빈 va-content가 배너 높이 확보(30vw, 최대 200px) — flex:1(basis 0%)이 height를 무시하므로 flex:none 필수 */
-            .va-panel.va-star.va-open .va-content { flex: none; height: 30vw; max-height: 200px; padding: 0; }
+            /* 별빛 응원: 빈 va-content가 배너 높이 확보 — 다른 탭(본문 2줄 ≈ 80px) 확장 높이에 맞춤. flex:1(basis 0%)이 height를 무시하므로 flex:none 필수 */
+            .va-panel.va-star.va-open .va-content { flex: none; height: 80px; padding: 0; }
             .va-star-btns { right: 10px; }
             /* 문구: 타이틀 행(상단) 아래에서 좌측 정렬, 전체 출력 */
             .va-star-quote { padding: 44px 16px 8px; }
