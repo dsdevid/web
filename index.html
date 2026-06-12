@@ -244,8 +244,7 @@
             animation: va-new-pulse 1.4s ease-in-out infinite;
         }
         .va-content {
-            position: relative;
-            z-index: 1;
+            position: relative;  /* z-index 금지 — 1 주면 -28px 겹침 구간에서 다음 탭 bar 클릭을 막음 (DOM 순서로 bg-img 위, 다음 패널 아래) */
             flex: 1;
             min-width: 0;
             display: flex;
