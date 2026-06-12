@@ -1,3 +1,10 @@
 # 비밀 키 평문 노출 방지 — 명세서는 git 추적 제외 (로컬 보관)
 기능명세서.md
 notice-gateway.worker.js
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+.env*
+!.env.example
