@@ -274,7 +274,7 @@
         .va-go:hover { background: rgba(255,255,255,0.38); }
 
         /* 별빛 응원 패널 — 배너가 패널 전면(세로바 뒤까지) 배경, 버튼은 패널 안 고정 */
-        .va-star-stage { position: absolute; inset: 0; background: linear-gradient(135deg, #020a1a, #091526); }
+        .va-star-stage { position: absolute; inset: 0 20px 0 0; background: linear-gradient(135deg, #020a1a, #091526); }  /* 우측 20px 축소 — 다음 패널 겹침 방지 */
         /* 안드로메다 회전 영상 — 별 레이어 아래, 검정 배경은 screen 블렌드로 투명화, 가장자리 radial 페이드 */
         .va-star-video {
             position: absolute; left: 55%; top: -2%; width: 48%; height: 104%;
@@ -289,7 +289,7 @@
         .va-star-btns { position: absolute; right: 38px; bottom: 10px; display: flex; gap: 6px; }  /* 우측 28px = 다음 패널 세로바 겹침 회피 */
         .va-panel.va-star .va-content { padding: 0; pointer-events: none; }
         .va-star-quote { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 0 92px 0 96px; pointer-events: none; }  /* 좌 96 = 세로바 88 + 여백, 문구 폭 472px */
-        .va-star-quote p { margin: 0; color: #fff; font-weight: 700; font-size: 22px; line-height: 1.55; text-align: center; text-wrap: balance; text-shadow: 0 2px 14px rgba(0,0,0,0.65); word-break: keep-all; transform: translate(-1.5em, -2em); }
+        .va-star-quote p { margin: 0; color: #fff; font-weight: 700; font-size: 22px; line-height: 1.55; text-align: center; text-wrap: balance; text-shadow: 0 2px 14px rgba(0,0,0,0.65); word-break: keep-all; transform: translate(calc(-1.5em + 20px), -2em); }
         #sbQuote { transition: opacity 0.3s ease; }
         /* 클릭 문구 교체: 1.5s 블러 아웃 → 1.5s 블러 인, ease-in-out으로 연속 연결 */
         #sbQuote.q-out { opacity: 0; filter: blur(8px); transition: opacity 1.5s ease-in-out, filter 1.5s ease-in-out; }
@@ -297,6 +297,7 @@
         .va-panel.va-star:not(.va-open) #sbQuote { opacity: 0; }  /* 접힌 탭: 문구가 타이틀과 겹치지 않게 숨김 */
         .spdbtn { width:26px; height:26px; border-radius:50%; border:0.5px solid rgba(147,197,253,0.5); background:rgba(8,18,38,0.6); color:#cfe3ff; font-size:16px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; -webkit-backdrop-filter:blur(2px); backdrop-filter:blur(2px); transition:background .15s,border-color .15s; }
         .spdbtn:hover { background:rgba(40,70,120,0.85); border-color:rgba(147,197,253,0.9); }
+        .spdbtn.dim { opacity:0.5; }  /* 속도 한계 도달 시 해당 버튼 흐리게 */
 
         /* 바로가기 이동 시 타이틀 블링크 */
         @keyframes titleBlink { 0%,100% { opacity: 1; } 50% { opacity: 0.15; } }
@@ -1229,6 +1230,8 @@
                 <svg id="starBanner" viewBox="0 0 680 240" preserveAspectRatio="xMinYMid slice" xmlns="http://www.w3.org/2000/svg">
                 <g id="sbRipples"></g>
                 <g id="sbMeteors"></g>
+                <polyline id="sbTrailL" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <polyline id="sbTrailR" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 <polyline id="sbTrail" fill="none" stroke="rgba(125,211,252,0.30)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 <g id="sbRocket" transform="translate(340,122)">
                   <g transform="rotate(90)">
@@ -1246,8 +1249,8 @@
                   <p id="sbQuote"></p>
                 </div>
                 <div class="va-star-btns">
-                  <button class="spdbtn" onclick="sbChangeSpeed(-0.1)" aria-label="속도 낮추기">−</button>
-                  <button class="spdbtn" onclick="sbChangeSpeed(0.1)" aria-label="속도 높이기">+</button>
+                  <button class="spdbtn" id="sbSpdDn" onclick="sbChangeSpeed(-0.2)" aria-label="속도 낮추기">−</button>
+                  <button class="spdbtn" id="sbSpdUp" onclick="sbChangeSpeed(0.2)" aria-label="속도 높이기">+</button>
                 </div>
             </div>
             <div class="va-bar">
@@ -2406,6 +2409,8 @@ function closeWeeklyPdf(e) {
   const svg=document.getElementById('starBanner');
   const rocket=document.getElementById('sbRocket');
   const trailEl=document.getElementById('sbTrail');
+  const trailL=document.getElementById('sbTrailL');
+  const trailR=document.getElementById('sbTrailR');
   const W=680,H=240,M=14;  // 가장자리 여백 — 로켓 크기만큼만 (목표·반사 공용)
   let speed=1, trailOn=true, trail=[];
   let pos={x:340,y:122};
@@ -2425,8 +2430,11 @@ function closeWeeklyPdf(e) {
     const p=toSvg(e);
     target={x:Math.max(M,Math.min(W-M,p.x)), y:Math.max(M,Math.min(H-M,p.y))};
     mode='pointer';
-    // 최초 누름에만 문구 교체 (드래그 이동 중에는 유지)
-    if((e.type==='pointerdown'||e.type==='touchstart')&&window.sbNextQuote) window.sbNextQuote();
+    // 최초 누름에만 문구 교체·단어 표시 (드래그 이동 중에는 유지)
+    if(e.type==='pointerdown'||e.type==='touchstart'){
+      if(window.sbNextQuote) window.sbNextQuote();
+      spawnWord(target.x,target.y);
+    }
   }
   svg.addEventListener('pointerdown',onPointer);
   svg.addEventListener('pointermove',function(e){ if(e.buttons) onPointer(e); });  // 드래그 추적
@@ -2443,6 +2451,25 @@ function closeWeeklyPdf(e) {
     bar.addEventListener('touchstart',fwd,{passive:true});
     bar.addEventListener('touchmove',fwd,{passive:true});
   }
+
+  function pts(arr){ return arr.map(function(p){ return p.x.toFixed(1)+','+p.y.toFixed(1); }).join(' '); }
+  function offsetPts(arr,d){
+    // 각 점의 이웃 방향 기준 수직 오프셋
+    return arr.map(function(p,i){
+      const a=arr[Math.max(0,i-1)], b=arr[Math.min(arr.length-1,i+1)];
+      const dx=b.x-a.x, dy=b.y-a.y, len=Math.hypot(dx,dy)||1;
+      return {x:p.x-dy/len*d, y:p.y+dx/len*d};
+    });
+  }
+  // 꼬리 색: 최저속 0.3=노랑(hue 60) → 최고속 4=빨강(hue 0) 보간
+  function updateTrailColor(){
+    const t=(speed-0.3)/3.7;
+    const hue=Math.round(60*(1-t));
+    trailEl.setAttribute('stroke','hsla('+hue+',95%,55%,0.5)');
+    trailL.setAttribute('stroke','hsla('+hue+',95%,55%,0.35)');
+    trailR.setAttribute('stroke','hsla('+hue+',95%,55%,0.35)');
+  }
+  updateTrailColor();
 
   let last=performance.now();
   function frame(now){
@@ -2479,16 +2506,23 @@ function closeWeeklyPdf(e) {
     const ang=Math.atan2(vel.y,vel.x)*180/Math.PI;
     rocket.setAttribute('transform','translate('+pos.x.toFixed(1)+','+pos.y.toFixed(1)+') rotate('+ang.toFixed(1)+')');
     if(trailOn){
-      trail.push(pos.x.toFixed(1)+','+pos.y.toFixed(1));
+      trail.push({x:pos.x,y:pos.y});
       if(trail.length>26) trail.shift();
-      trailEl.setAttribute('points',trail.join(' '));
+      trailEl.setAttribute('points',pts(trail));
+      // 좌우 보조선: 본선의 최근 50% 구간을 진행 방향 수직으로 ±3px 오프셋
+      const half=trail.slice(-13);
+      trailL.setAttribute('points',pts(offsetPts(half,3)));
+      trailR.setAttribute('points',pts(offsetPts(half,-3)));
     }
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
 
   window.sbChangeSpeed=function(d){
-    speed=Math.round(Math.min(3,Math.max(0.3,speed+d))*10)/10;
+    speed=Math.round(Math.min(4,Math.max(0.3,speed+d))*10)/10;
+    document.getElementById('sbSpdUp').classList.toggle('dim',speed>=4);
+    document.getElementById('sbSpdDn').classList.toggle('dim',speed<=0.3);
+    updateTrailColor();
   };
 
   // 도착 지점 효과: 골드 파형이 퍼졌다 원점 복귀 → 큰 별 번쩍 후 소멸
@@ -2504,7 +2538,30 @@ function closeWeeklyPdf(e) {
     a.setAttribute('dur',dur); a.setAttribute('begin','indefinite'); a.setAttribute('fill','freeze');
     el.appendChild(a);
   }
+  // 클릭 위치 단어: 임의 단어 표시 → 도착 별 번쩍과 함께 소멸
+  const WORDS=['믿음','용기','버팀','견딤','괜찮아','충분해','온기','꿈','성장','내일','빛','고요','쉼','평온','뿌리','회복','나다움','사랑','평정심','해냄','다짐','오름','열정','의지','품','다독임','포근함','진심','새벽','걸음','초심','자존','희망'];
+  let wordEl=null, lastWord=-1;
+  function spawnWord(x,y){
+    if(wordEl){ wordEl.remove(); wordEl=null; }  // 연타 시 이전 단어 즉시 교체
+    let i;
+    do{ i=Math.floor(Math.random()*WORDS.length); }while(i===lastWord);
+    lastWord=i;
+    const t=document.createElementNS(SVGNS,'text');
+    t.setAttribute('x',Math.max(26,Math.min(W-26,x)).toFixed(1));
+    t.setAttribute('y',Math.max(14,Math.min(H-6,y+4)).toFixed(1));  // +4 = 폰트 세로 중앙 보정, 클릭점 정중앙
+    t.setAttribute('text-anchor','middle');
+    t.setAttribute('fill','#ffe9a8');
+    t.setAttribute('font-size','13');
+    t.setAttribute('font-weight','700');
+    t.setAttribute('pointer-events','none');
+    t.textContent=WORDS[i];
+    anim(t,'opacity','0;0.95','0;1','0.3s');
+    ripplesG.appendChild(t);
+    t.querySelectorAll('animate').forEach(function(a){ a.beginElement(); });
+    wordEl=t;
+  }
   function ripple(x,y){
+    const w=wordEl;  // 이 도착에 속한 단어 고정 — 타이머 실행 전 새 클릭이 와도 새 단어는 안 건드림
     // 1) 파형 4겹: 3→46→3 왕복
     for(let i=0;i<4;i++){
       setTimeout(function(){
@@ -2535,6 +2592,13 @@ function closeWeeklyPdf(e) {
       g.appendChild(p); g.appendChild(core); ripplesG.appendChild(g);
       g.querySelectorAll('animate, animateTransform').forEach(function(a){ a.beginElement(); });
       setTimeout(function(){ g.remove(); },620);
+      // 단어도 별 번쩍과 같은 타이밍으로 소멸 — 이 도착 시점의 단어만 (이후 새 클릭 단어 보호)
+      if(w&&w.isConnected){
+        if(wordEl===w) wordEl=null;
+        anim(w,'opacity','0.95;0.95;0','0;0.6;1','0.55s');
+        w.lastChild.beginElement();  // 소멸 애니메이션만 시작 (페이드인 재시작 방지)
+        setTimeout(function(){ w.remove(); },620);
+      }
     }, 1400);
   }
 })();
