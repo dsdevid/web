@@ -41,6 +41,7 @@
             color: var(--ink);
             font-size: 17px;
             line-height: 1.47;
+            padding-top: 44px;  /* fixed 헤더 높이만큼 본문 내림 */
             -webkit-font-smoothing: antialiased;
             overflow-x: hidden;
             width: 100%;
@@ -50,12 +51,14 @@
         }
 
         /* ── Global Nav ── */
+        header {
+            position: fixed;  /* sticky는 부모(header) 높이에 갇혀 무효 + overflow-x:hidden 조상 이슈 → fixed */
+            top: 0; left: 0; right: 0;
+            z-index: 200;
+        }
         .global-nav {
             background: var(--nav-black);
             height: 44px;
-            position: sticky;
-            top: 0;
-            z-index: 200;
         }
 
         .nav-inner {
